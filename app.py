@@ -27,7 +27,6 @@ def get_airtable_data():
         
         if response.status_code != 200:
             raise Exception(f"Fout bij ophalen data: {response.status_code} - {response.text}")
-
         data = response.json()
         
         # Converteer records naar een DataFrame
@@ -56,17 +55,17 @@ def send_whatsapp_message(naam, dag, tijdvak):
             {
                 "type": "body",
                 "key": "{{1}}",
-                "value": str(fields.naam)
+                "value": str(naam)
             },
             {
                 "type": "body",
                 "key": "{{2}}",
-                "value": str(fields.dag)
+                "value": str(dag)
             },
             {
                 "type": "body",
                 "key": "{{3}}",
-                "value": str(fields.tijdvak)
+                "value": str(tijdvak)
             }
         ]
     }
@@ -102,13 +101,13 @@ def process_data():
         # Verwerk elke rij
         for index, row in df.iterrows():
             try:
-                print(f"\nVerwerken rij {index + 1}: {row['fields']['naam']}")
+                print(f"\nVerwerken rij {index + 1}: {row['fields.naam']}")
                 send_whatsapp_message(
-                    naam=row['fields']['naam'],
-                    dag=row['fields']['dag'],
-                    tijdvak=row['fields']['tijdvak']
+                    naam=row['fields.naam'],
+                    dag=row['fields.dag'],
+                    tijdvak=row['fields.tijdvak']
                 )
-                print(f"Bericht verstuurd voor {row['fields']['naam']}")
+                print(f"Bericht verstuurd voor {row['fields.naam']}")
                 
             except Exception as e:
                 print(f"Fout bij verwerken rij {index}: {str(e)}")
