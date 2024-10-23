@@ -1,52 +1,49 @@
 import os
 import requests
-from office365.sharepoint.client_context import ClientContext
-from office365.runtime.auth.client_credential import ClientCredential
-from office365.sharepoint.files.file import File
 import pandas as pd
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
-from io import BytesIO
 
-def get_sharepoint_data():
-    """Haalt data op uit SharePoint Excel bestand"""
+# Airtable configuratie
+AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
+AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')  # Bijvoorbeeld: "Projecten"
+AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
+
+def get_airtable_data():
+    """Haalt data op uit Airtable."""
     try:
-        print("Start ophalen SharePoint data...")
+        print("Start ophalen Airtable data...")
         
-        # Pas de juiste SharePoint site URL aan
-        site_url = "https://boostix.sharepoint.com/sites/BoostiX"
-        client_id = os.environ.get('SHAREPOINT_CLIENT_ID')
-        client_secret = os.environ.get('SHAREPOINT_CLIENT_SECRET')
+        url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
         
-        print("Verbinden met SharePoint...")
-        credentials = ClientCredential(client_id, client_secret)
-        ctx = ClientContext(site_url).with_credentials(credentials)
+        headers = {
+            "Authorization": f"Bearer {AIRTABLE_API_KEY}",
+            "Content-Type": "application/json"
+        }
         
-        # Relatieve URL van het bestand (pas dit pad aan op basis van je SharePoint structuur)
-        relative_url = "/sites/BoostiX/Gedeelde%20documenten/Projecten/06.%20Fixzed/4.%20Data/TestingTrengo/trengotest.xlsx"
+        print("Verbinden met Airtable...")
         
-        print(f"Ophalen bestand: {relative_url}")
+        response = requests.get(url, headers=headers)
         
-        # Haal het bestand op
-        response = File.open_binary(ctx, relative_url)
-        bytes_file_obj = BytesIO()
-        bytes_file_obj.write(response.content)
-        bytes_file_obj.seek(0)
+        if response.status_code != 200:
+            raise Exception(f"Fout bij ophalen data: {response.status_code} - {response.text}")
+
+        data = response.json()
         
-        df = pd.read_excel(bytes_file_obj)
+        # Converteer records naar een DataFrame
+        df = pd.json_normalize(data['records'])
+        
         print(f"Data opgehaald. Aantal rijen: {len(df)}")
         print("Voorbeeld van opgehaalde data:")
         print(df.head())
         return df
     
     except Exception as e:
-        print(f"Fout bij ophalen SharePoint data: {str(e)}")
-        print(f"Client ID aanwezig: {'Ja' if client_id else 'Nee'}")
-        print(f"Client Secret aanwezig: {'Ja' if client_secret else 'Nee'}")
+        print(f"Fout bij ophalen Airtable data: {str(e)}")
         raise
 
 def send_whatsapp_message(naam, dag, tijdvak):
-    """Verstuurt WhatsApp bericht via Trengo"""
+    """Verstuurt WhatsApp bericht via Trengo."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
     # Bijgewerkt telefoonnummer
@@ -91,12 +88,12 @@ def send_whatsapp_message(naam, dag, tijdvak):
         raise
 
 def process_data():
-    """Hoofdfunctie die data ophaalt en berichten verstuurt"""
+    """Hoofdfunctie die data ophaalt en berichten verstuurt."""
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
     
     try:
         # Haal data op
-        df = get_sharepoint_data()
+        df = get_airtable_data()
         
         if df.empty:
             print("Geen data gevonden om te verwerken")
@@ -105,13 +102,13 @@ def process_data():
         # Verwerk elke rij
         for index, row in df.iterrows():
             try:
-                print(f"\nVerwerken rij {index + 1}: {row['naam']}")
+                print(f"\nVerwerken rij {index + 1}: {row['fields']['naam']}")
                 send_whatsapp_message(
-                    naam=row['naam'],
-                    dag=row['dag'],
-                    tijdvak=row['tijdvak']
+                    naam=row['fields']['naam'],
+                    dag=row['fields']['dag'],
+                    tijdvak=row['fields']['tijdvak']
                 )
-                print(f"Bericht verstuurd voor {row['naam']}")
+                print(f"Bericht verstuurd voor {row['fields']['naam']}")
                 
             except Exception as e:
                 print(f"Fout bij verwerken rij {index}: {str(e)}")
