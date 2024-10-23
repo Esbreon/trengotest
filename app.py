@@ -23,7 +23,7 @@ def get_sharepoint_data():
         ctx = ClientContext(site_url).with_credentials(credentials)
         
         # Relatieve URL van het bestand (pas dit pad aan op basis van je SharePoint structuur)
-        relative_url = "Gedeelde%20documenten/Projecten/06.%20Fixzed/4.%20Data/TestingTrengo/trengotest.xlsx"
+        relative_url = "/sites/BoostiX/Gedeelde%20documenten/Projecten/06.%20Fixzed/4.%20Data/TestingTrengo/trengotest.xlsx"
         
         print(f"Ophalen bestand: {relative_url}")
         
