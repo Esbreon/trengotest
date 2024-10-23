@@ -1,53 +1,54 @@
 import os
-import pandas as pd
 import requests
-from office365.runtime.auth.authentication_context import AuthenticationContext
 from office365.sharepoint.client_context import ClientContext
-from office365.sharepoint.files.file import File
-from io import BytesIO
-from apscheduler.schedulers.blocking import BlockingScheduler
+from office365.runtime.auth.client_credential import ClientCredential
+import pandas as pd
 from datetime import datetime
+from apscheduler.schedulers.blocking import BlockingScheduler
 
-# Initialize scheduler
-scheduler = BlockingScheduler()
+# Trengo configuratie
+TRENGO_URL = "https://app.trengo.com/api/v2/wa_sessions"
+TRENGO_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiNDk5NjQ4M2JjMDE3Y2FlYzI4ZTExYTFlN2E0NTYyODkzNmIzZTEyNzRmZDllMThmZDIxNDZkYTA1OTJiNGUyZDRiODMyMTYyZjE2OWE1NDMiLCJpYXQiOjE3Mjk0MzMwNDYsIm5iZiI6MTcyOTQzMzA0NiwiZXhwIjo0ODUzNDg0MjQ2LCJzdWIiOiI3Mjc3MzQiLCJzY29wZXMiOltdLCJhZ2VuY3lfaWQiOjMxOTc2N30.bYiBRdH_tSt3uHUSGTFANJBhSfjZo-1hRzN9SHjQf4VB4NqxsXcaFg2wZXSGlKfvMgQ10X3KG1JtbJZoDRfuUA"
+TEMPLATE_ID = 181327
 
-def read_sharepoint_excel():
-    """
-    Leest Excel bestand van SharePoint
-    """
+def get_sharepoint_data():
+    """Haalt data op uit SharePoint lijst"""
     try:
-        # Haal configuratie uit environment variables
-        SITE_URL = os.environ['SHAREPOINT_SITE_URL']
-        EXCEL_PATH = os.environ['SHAREPOINT_EXCEL_PATH']
-        CLIENT_ID = os.environ['SHAREPOINT_CLIENT_ID']
-        CLIENT_SECRET = os.environ['SHAREPOINT_CLIENT_SECRET']
-
-        auth = AuthenticationContext(SITE_URL)
-        auth.acquire_token_for_app(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
-        ctx = ClientContext(SITE_URL, auth)
+        # SharePoint configuratie
+        site_url = "https://boostix.sharepoint.com/s/BoostiX"
+        client_id = os.environ.get('SHAREPOINT_CLIENT_ID')
+        client_secret = os.environ.get('SHAREPOINT_CLIENT_SECRET')
         
-        response = File.open_binary(ctx, EXCEL_PATH)
-        bytes_file_obj = BytesIO()
-        bytes_file_obj.write(response.content)
-        bytes_file_obj.seek(0)
+        # Verbind met SharePoint
+        credentials = ClientCredential(client_id, client_secret)
+        ctx = ClientContext(site_url).with_credentials(credentials)
         
-        return pd.read_excel(bytes_file_obj)
+        # Haal lijst op (pas de lijst naam aan)
+        list_title = "trengotest"
+        target_list = ctx.web.lists.get_by_title(list_title)
+        items = target_list.items.get().execute_query()
+        
+        # Converteer naar pandas DataFrame
+        data = []
+        for item in items:
+            data.append({
+                'naam': item.properties.get('Title', ''),  # SharePoint gebruikt 'Title' als standaard
+                'dag': item.properties.get('Dag', ''),
+                'tijdvak': item.properties.get('Tijdvak', ''),
+                'telefoonnummer': item.properties.get('Telefoonnummer', '')
+            })
+        
+        return pd.DataFrame(data)
+    
     except Exception as e:
-        print(f"Fout bij lezen SharePoint bestand: {str(e)}")
+        print(f"Fout bij ophalen SharePoint data: {str(e)}")
         raise
 
-def send_whatsapp_template(naam, dag, tijdvak):
-    """
-    Verstuurt WhatsApp template via Trengo API
-    """
-    url = "https://app.trengo.com/api/v2/wa_sessions"
-    
-    # Vast telefoonnummer voor testing
-    TEST_PHONE = "31611341059"
-    
+def send_whatsapp_message(nummer, naam, dag, tijdvak):
+    """Verstuurt WhatsApp bericht via Trengo"""
     payload = {
-        "recipient_phone_number": TEST_PHONE,
-        "hsm_id": 181327,
+        "recipient_phone_number": nummer,
+        "hsm_id": TEMPLATE_ID,
         "params": [
             {
                 "type": "body",
@@ -70,42 +71,54 @@ def send_whatsapp_template(naam, dag, tijdvak):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "Authorization": f"Bearer {os.environ['TRENGO_API_TOKEN']}"
+        "Authorization": f"Bearer {TRENGO_TOKEN}"
     }
     
-    response = requests.post(url, json=payload, headers=headers)
-    return response.json()
+    try:
+        response = requests.post(TRENGO_URL, json=payload, headers=headers)
+        response.raise_for_status()
+        print(f"Bericht verstuurd naar {nummer}: {response.json()}")
+        return response.json()
+    
+    except Exception as e:
+        print(f"Fout bij versturen bericht naar {nummer}: {str(e)}")
+        raise
 
-@scheduler.scheduled_job('interval', minutes=30)
-def process_excel():
-    """
-    Hoofdfunctie die elke 30 minuten wordt uitgevoerd
-    """
+def process_data():
+    """Hoofdfunctie die data ophaalt en berichten verstuurt"""
     print(f"Start verwerking: {datetime.now()}")
     
     try:
-        # Lees data van SharePoint
-        df = read_sharepoint_excel()
-        print("Excel bestand succesvol gelezen van SharePoint")
+        # Haal data op
+        df = get_sharepoint_data()
+        print(f"Data opgehaald uit SharePoint. Aantal rijen: {len(df)}")
         
         # Verwerk elke rij
         for index, row in df.iterrows():
             try:
-                response = send_whatsapp_template(
+                nummer = row['telefoonnummer']
+                # Zorg dat nummer in correct formaat staat
+                if not nummer.startswith('31'):
+                    nummer = '31' + nummer.lstrip('0')
+                
+                send_whatsapp_message(
+                    nummer=nummer,
                     naam=row['naam'],
                     dag=row['dag'],
                     tijdvak=row['tijdvak']
                 )
                 
-                print(f"Bericht verstuurd voor rij {index + 1}: {response}")
-                
             except Exception as e:
-                print(f"Fout bij versturen van rij {index + 1}: {str(e)}")
+                print(f"Fout bij verwerken rij {index}: {str(e)}")
                 continue
                 
     except Exception as e:
-        print(f"Algemene fout: {str(e)}")
+        print(f"Algemene fout in process_data: {str(e)}")
+
+# Schedule de job
+scheduler = BlockingScheduler()
+scheduler.add_job(process_data, 'interval', minutes=30)
 
 if __name__ == "__main__":
-    print("Scheduler starting...")
+    print("Starting scheduler...")
     scheduler.start()
