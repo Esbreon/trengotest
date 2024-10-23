@@ -2,12 +2,14 @@ import os
 import requests
 from office365.sharepoint.client_context import ClientContext
 from office365.runtime.auth.client_credential import ClientCredential
+from office365.sharepoint.files.file import File
 import pandas as pd
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
+from io import BytesIO
 
 def get_sharepoint_data():
-    """Haalt data op uit SharePoint lijst"""
+    """Haalt data op uit SharePoint Excel bestand"""
     try:
         print("Start ophalen SharePoint data...")
         site_url = "https://boostix.sharepoint.com/s/BoostiX"
@@ -18,21 +20,18 @@ def get_sharepoint_data():
         credentials = ClientCredential(client_id, client_secret)
         ctx = ClientContext(site_url).with_credentials(credentials)
         
-        # Haal lijst op met exacte naam
-        list_title = "trengotest"
-        target_list = ctx.web.lists.get_by_title(list_title)
-        items = target_list.items.get().execute_query()
+        # Drive ID en File ID uit de SharePoint URL
+        relative_url = "/s/BoostiX/EQLoMH4VwPNGqwpsHlkwHF4B-DnA_PJKNikv0zPaZ7I3qg"
         
-        # Maak DataFrame met exacte kolomnamen uit Excel
-        data = []
-        for item in items:
-            data.append({
-                'naam': item.properties.get('naam', ''),
-                'dag': item.properties.get('dag', ''),
-                'tijdvak': item.properties.get('tijdvak', '')
-            })
+        print(f"Ophalen bestand: {relative_url}")
         
-        df = pd.DataFrame(data)
+        # Haal het bestand op
+        response = File.open_binary(ctx, relative_url)
+        bytes_file_obj = BytesIO()
+        bytes_file_obj.write(response.content)
+        bytes_file_obj.seek(0)
+        
+        df = pd.read_excel(bytes_file_obj)
         print(f"Data opgehaald. Aantal rijen: {len(df)}")
         print("Voorbeeld van opgehaalde data:")
         print(df.head())
@@ -40,13 +39,15 @@ def get_sharepoint_data():
     
     except Exception as e:
         print(f"Fout bij ophalen SharePoint data: {str(e)}")
+        print(f"Client ID aanwezig: {'Ja' if client_id else 'Nee'}")
+        print(f"Client Secret aanwezig: {'Ja' if client_secret else 'Nee'}")
         raise
 
 def send_whatsapp_message(naam, dag, tijdvak):
     """Verstuurt WhatsApp bericht via Trengo"""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
-    # Test telefoonnummer
+    # Bijgewerkt telefoonnummer
     PHONE_NUMBER = "31653610195"
     
     payload = {
