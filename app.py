@@ -15,8 +15,8 @@ def get_sharepoint_data():
         
         # Pas de juiste SharePoint site URL aan
         site_url = "https://boostix.sharepoint.com/sites/BoostiX"
-        client_id = os.environ.get('SHAREPOINT_CLIENT_ID')
-        client_secret = os.environ.get('SHAREPOINT_CLIENT_SECRET')
+        client_id = "21d873ce-0da6-46ec-975a-1203188e5af6"
+        client_secret = "tce8Q~.LU-rywN_5.1ECld5D_HuhRpGxDOFDRcKg"
         
         print("Verbinden met SharePoint...")
         credentials = ClientCredential(client_id, client_secret)
@@ -77,7 +77,7 @@ def send_whatsapp_message(naam, dag, tijdvak):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "Authorization": "Bearer " + os.environ.get('TRENGO_API_KEY')
+        "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiNDk5NjQ4M2JjMDE3Y2FlYzI4ZTExYTFlN2E0NTYyODkzNmIzZTEyNzRmZDllMThmZDIxNDZkYTA1OTJiNGUyZDRiODMyMTYyZjE2OWE1NDMiLCJpYXQiOjE3Mjk0MzMwNDYsIm5iZiI6MTcyOTQzMzA0NiwiZXhwIjo0ODUzNDg0MjQ2LCJzdWIiOiI3Mjc3MzQiLCJzY29wZXMiOltdLCJhZ2VuY3lfaWQiOjMxOTc2N30.bYiBRdH_tSt3uHUSGTFANJBhSfjZo-1hRzN9SHjQf4VB4NqxsXcaFg2wZXSGlKfvMgQ10X3KG1JtbJZoDRfuUA"
     }
     
     try:
