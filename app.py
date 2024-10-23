@@ -47,7 +47,7 @@ def send_whatsapp_message(naam, dag, tijdvak):
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
     # Test telefoonnummer
-    PHONE_NUMBER = "31611341059"
+    PHONE_NUMBER = "31653610195"
     
     payload = {
         "recipient_phone_number": PHONE_NUMBER,
