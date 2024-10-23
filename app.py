@@ -17,7 +17,8 @@ def get_sharepoint_data():
         site_url = "https://boostix.sharepoint.com/sites/BoostiX"
         client_id = os.environ.get('SHAREPOINT_CLIENT_ID')
         client_secret = os.environ.get('SHAREPOINT_CLIENT_SECRET')
-        
+        print(client_id)
+        print(client_secret)
         print("Verbinden met SharePoint...")
         credentials = ClientCredential(client_id, client_secret)
         ctx = ClientContext(site_url).with_credentials(credentials)
