@@ -12,7 +12,9 @@ def get_sharepoint_data():
     """Haalt data op uit SharePoint Excel bestand"""
     try:
         print("Start ophalen SharePoint data...")
-        site_url = "https://boostix.sharepoint.com/s/BoostiX"
+        
+        # Pas de juiste SharePoint site URL aan
+        site_url = "https://boostix.sharepoint.com/sites/BoostiX"
         client_id = os.environ.get('SHAREPOINT_CLIENT_ID')
         client_secret = os.environ.get('SHAREPOINT_CLIENT_SECRET')
         
@@ -20,8 +22,8 @@ def get_sharepoint_data():
         credentials = ClientCredential(client_id, client_secret)
         ctx = ClientContext(site_url).with_credentials(credentials)
         
-        # Drive ID en File ID uit de SharePoint URL
-        relative_url = "/s/BoostiX/EQLoMH4VwPNGqwpsHlkwHF4B-DnA_PJKNikv0zPaZ7I3qg"
+        # Relatieve URL van het bestand (pas dit pad aan op basis van je SharePoint structuur)
+        relative_url = "/sites/BoostiX/Shared Documents/Projecten/06. Fixzed/4. Data/TestingTrengo/trengotest.xlsx"
         
         print(f"Ophalen bestand: {relative_url}")
         
@@ -75,7 +77,7 @@ def send_whatsapp_message(naam, dag, tijdvak):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiNDk5NjQ4M2JjMDE3Y2FlYzI4ZTExYTFlN2E0NTYyODkzNmIzZTEyNzRmZDllMThmZDIxNDZkYTA1OTJiNGUyZDRiODMyMTYyZjE2OWE1NDMiLCJpYXQiOjE3Mjk0MzMwNDYsIm5iZiI6MTcyOTQzMzA0NiwiZXhwIjo0ODUzNDg0MjQ2LCJzdWIiOiI3Mjc3MzQiLCJzY29wZXMiOltdLCJhZ2VuY3lfaWQiOjMxOTc2N30.bYiBRdH_tSt3uHUSGTFANJBhSfjZo-1hRzN9SHjQf4VB4NqxsXcaFg2wZXSGlKfvMgQ10X3KG1JtbJZoDRfuUA"
+        "Authorization": "Bearer " + os.environ.get('TRENGO_API_KEY')
     }
     
     try:
