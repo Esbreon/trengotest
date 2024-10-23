@@ -56,17 +56,17 @@ def send_whatsapp_message(naam, dag, tijdvak):
             {
                 "type": "body",
                 "key": "{{1}}",
-                "value": str(naam)
+                "value": str(fields.naam)
             },
             {
                 "type": "body",
                 "key": "{{2}}",
-                "value": str(dag)
+                "value": str(fields.dag)
             },
             {
                 "type": "body",
                 "key": "{{3}}",
-                "value": str(tijdvak)
+                "value": str(fields.tijdvak)
             }
         ]
     }
