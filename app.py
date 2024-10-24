@@ -41,15 +41,29 @@ def get_airtable_data():
         print(f"Fout bij ophalen Airtable data: {str(e)}")
         raise
 
-def send_whatsapp_message(naam, dag, tijdvak):
+def format_phone_number(phone):
+    """Formatteert telefoonnummer naar het juiste formaat voor Trengo."""
+    # Verwijder alle niet-numerieke karakters
+    phone = ''.join(filter(str.isdigit, str(phone)))
+    
+    # Als het nummer met een 0 begint, vervang dit door 31
+    if phone.startswith('0'):
+        phone = '31' + phone[1:]
+    # Als het nummer nog niet met 31 begint, voeg het toe
+    elif not phone.startswith('31'):
+        phone = '31' + phone
+    
+    return phone
+
+def send_whatsapp_message(naam, dag, tijdvak, telefoon):
     """Verstuurt WhatsApp bericht via Trengo."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
-    # Bijgewerkt telefoonnummer
-    PHONE_NUMBER = "31653610195"
+    # Formatteer het telefoonnummer
+    formatted_phone = format_phone_number(telefoon)
     
     payload = {
-        "recipient_phone_number": PHONE_NUMBER,
+        "recipient_phone_number": formatted_phone,
         "hsm_id": 181327,
         "params": [
             {
@@ -77,7 +91,7 @@ def send_whatsapp_message(naam, dag, tijdvak):
     }
     
     try:
-        print(f"Versturen bericht naar {PHONE_NUMBER} voor {naam}...")
+        print(f"Versturen bericht naar {formatted_phone} voor {naam}...")
         response = requests.post(url, json=payload, headers=headers)
         print(f"Response van Trengo: {response.text}")
         return response.json()
@@ -102,10 +116,17 @@ def process_data():
         for index, row in df.iterrows():
             try:
                 print(f"\nVerwerken rij {index + 1}: {row['fields.naam']}")
+                
+                # Controleer of het telefoonnummer aanwezig is
+                if 'fields.telefoon' not in row or pd.isna(row['fields.telefoon']):
+                    print(f"Geen telefoonnummer gevonden voor {row['fields.naam']}, deze rij wordt overgeslagen")
+                    continue
+                
                 send_whatsapp_message(
                     naam=row['fields.naam'],
                     dag=row['fields.dag'],
-                    tijdvak=row['fields.tijdvak']
+                    tijdvak=row['fields.tijdvak'],
+                    telefoon=row['fields.telefoon']
                 )
                 print(f"Bericht verstuurd voor {row['fields.naam']}")
                 
