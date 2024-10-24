@@ -115,20 +115,20 @@ def process_data():
         # Verwerk elke rij
         for index, row in df.iterrows():
             try:
-                print(f"\nVerwerken rij {index + 1}: {row['fields.naam']}")
+                print(f"\nVerwerken rij {index + 1}: {row['fields.Naam klant']}")
                 
                 # Controleer of het telefoonnummer aanwezig is
-                if 'fields.telefoon' not in row or pd.isna(row['fields.telefoon']):
-                    print(f"Geen telefoonnummer gevonden voor {row['fields.naam']}, deze rij wordt overgeslagen")
+                if 'fields.Mobielnummer' not in row or pd.isna(row['fields.Mobielnummer']):
+                    print(f"Geen telefoonnummer gevonden voor {row['fields.Naam klant']}, deze rij wordt overgeslagen")
                     continue
                 
                 send_whatsapp_message(
-                    naam=row['fields.naam'],
-                    dag=row['fields.dag'],
-                    tijdvak=row['fields.tijdvak'],
-                    telefoon=row['fields.telefoon']
+                    naam=row['fields.Naam klant'],
+                    dag=row['fields.Datum'],
+                    tijdvak=row['fields.Tijdvak'],
+                    telefoon=row['fields.Mobielnummer']
                 )
-                print(f"Bericht verstuurd voor {row['fields.naam']}")
+                print(f"Bericht verstuurd voor {row['fields.Naam klant']}")
                 
             except Exception as e:
                 print(f"Fout bij verwerken rij {index}: {str(e)}")
