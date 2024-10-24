@@ -165,6 +165,7 @@ def process_data():
                     monteur=row['fields.Monteur'],
                     dagnaam=row['fields.Dagnaam'],
                     datum=row['fields.Datum'],
+                    monteur=row['fields.Monteur'],
                     begintijd=row['fields.Begintijd'],
                     eindtijd=row['fields.Eindtijd'],
                     reparatieduur=row['fields.Reparatieduur'],
