@@ -58,7 +58,7 @@ def format_phone_number(phone):
     
     return phone
 
-def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
+def send_whatsapp_message(naam, monteur, dagnaam, datum, monteur2, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
     """Verstuurt WhatsApp bericht via Trengo."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
@@ -92,7 +92,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {
                 "type": "body",
                 "key": "{{5}}",
-                "value": str(monteur)
+                "value": str(monteur2)
             },
             {
                 "type": "body",
@@ -165,7 +165,7 @@ def process_data():
                     monteur=row['fields.Monteur'],
                     dagnaam=row['fields.Dagnaam'],
                     datum=row['fields.Datum'],
-                    monteur=row['fields.Monteur'],
+                    monteur2=row['fields.Monteur'],
                     begintijd=row['fields.Begintijd'],
                     eindtijd=row['fields.Eindtijd'],
                     reparatieduur=row['fields.Reparatieduur'],
