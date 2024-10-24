@@ -10,7 +10,7 @@ AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')  # Bijvoorbeeld: "Pr
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 
 # WhatsApp template configuratie
-WHATSAPP_TEMPLATE_ID = 181327  # Pas dit aan naar het juiste template ID
+WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID')
 
 def get_airtable_data():
     """Haalt data op uit Airtable."""
