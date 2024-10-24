@@ -4,15 +4,15 @@ import pandas as pd
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-# Airtable configuration
+# Airtable configuratie
 AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
-AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')
+AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')  # Bijvoorbeeld: "Projecten"
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 
 def get_airtable_data():
-    """Fetches data from Airtable."""
+    """Haalt data op uit Airtable."""
     try:
-        print("Starting Airtable data fetch...")
+        print("Start ophalen Airtable data...")
         
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
         
@@ -21,55 +21,46 @@ def get_airtable_data():
             "Content-Type": "application/json"
         }
         
-        print("Connecting to Airtable...")
+        print("Verbinden met Airtable...")
         
         response = requests.get(url, headers=headers)
         
         if response.status_code != 200:
-            raise Exception(f"Error fetching data: {response.status_code} - {response.text}")
+            raise Exception(f"Fout bij ophalen data: {response.status_code} - {response.text}")
         data = response.json()
         
-        # Convert records to DataFrame
+        # Converteer records naar een DataFrame
         df = pd.json_normalize(data['records'])
         
-        print(f"Data retrieved. Row count: {len(df)}")
-        print("Sample of retrieved data:")
+        print(f"Data opgehaald. Aantal rijen: {len(df)}")
+        print("Voorbeeld van opgehaalde data:")
         print(df.head())
         return df
     
     except Exception as e:
-        print(f"Error fetching Airtable data: {str(e)}")
+        print(f"Fout bij ophalen Airtable data: {str(e)}")
         raise
 
 def format_phone_number(phone):
-    """Formats phone number to the correct format for Trengo."""
-    if not phone:  # Check for None or empty string
-        return None
-        
-    # Remove all non-numeric characters
+    """Formatteert telefoonnummer naar het juiste formaat voor Trengo."""
+    # Verwijder alle niet-numerieke karakters
     phone = ''.join(filter(str.isdigit, str(phone)))
     
-    # Validate phone number length
-    if len(phone) < 9:  # Basic validation for minimum length
-        return None
-        
-    # If number starts with 0, replace with 31
+    # Als het nummer met een 0 begint, vervang dit door 31
     if phone.startswith('0'):
         phone = '31' + phone[1:]
-    # If number doesn't start with 31, add it
+    # Als het nummer nog niet met 31 begint, voeg het toe
     elif not phone.startswith('31'):
         phone = '31' + phone
     
     return phone
 
-def send_whatsapp_message(naam, dag, tijdvak, telefoon):
-    """Sends WhatsApp message via Trengo."""
+def send_whatsapp_message(naam, dag, tijdvak, telefoon, reparatieduur):
+    """Verstuurt WhatsApp bericht via Trengo."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
-    # Format the phone number
+    # Formatteer het telefoonnummer
     formatted_phone = format_phone_number(telefoon)
-    if not formatted_phone:
-        raise ValueError(f"Invalid phone number for {naam}: {telefoon}")
     
     payload = {
         "recipient_phone_number": formatted_phone,
@@ -78,7 +69,7 @@ def send_whatsapp_message(naam, dag, tijdvak, telefoon):
             {
                 "type": "body",
                 "key": "{{1}}",
-                "value": str(naam)  # Fixed: Using the parameter naam instead of Naam klant
+                "value": str(naam)
             },
             {
                 "type": "body",
@@ -93,7 +84,7 @@ def send_whatsapp_message(naam, dag, tijdvak, telefoon):
             {
                 "type": "body",
                 "key": "{{4}}",
-                "value": "60 minuten"  # Added default repair duration
+                "value": str(reparatieduur)
             }
         ]
     }
@@ -101,84 +92,65 @@ def send_whatsapp_message(naam, dag, tijdvak, telefoon):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}"
+        "Authorization": "Bearer " + os.environ.get('TRENGO_API_KEY')
     }
     
     try:
-        print(f"Sending message to {formatted_phone} for {naam}...")
+        print(f"Versturen bericht naar {formatted_phone} voor {naam}...")
         response = requests.post(url, json=payload, headers=headers)
-        
-        if response.status_code not in (200, 201):
-            raise Exception(f"Error from Trengo API: {response.status_code} - {response.text}")
-            
-        print(f"Message sent successfully to {naam}")
+        print(f"Response van Trengo: {response.text}")
         return response.json()
     
     except Exception as e:
-        print(f"Error sending message: {str(e)}")
+        print(f"Fout bij versturen bericht: {str(e)}")
         raise
 
 def process_data():
-    """Main function that fetches data and sends messages."""
-    print(f"\n=== Starting new processing cycle: {datetime.now()} ===")
+    """Hoofdfunctie die data ophaalt en berichten verstuurt."""
+    print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
     
     try:
-        # Fetch data
+        # Haal data op
         df = get_airtable_data()
         
         if df.empty:
-            print("No data found to process")
+            print("Geen data gevonden om te verwerken")
             return
         
-        # Process each row
+        # Verwerk elke rij
         for index, row in df.iterrows():
             try:
-                naam = row.get('fields.Naam klant')
-                print(f"\nProcessing row {index + 1}: {naam}")
+                print(f"\nVerwerken rij {index + 1}: {row['fields.Naam klant']}")
                 
-                # Check if phone number exists
+                # Controleer of het telefoonnummer aanwezig is
                 if 'fields.Mobielnummer' not in row or pd.isna(row['fields.Mobielnummer']):
-                    print(f"No phone number found for {naam}, skipping this row")
-                    continue
-                
-                # Validate required fields
-                required_fields = {
-                    'Naam': naam,
-                    'Datum': row.get('fields.Datum'),
-                    'Tijdvak': row.get('fields.Tijdvak'),
-                    'Mobielnummer': row.get('fields.Mobielnummer')
-                }
-                
-                if any(not value for value in required_fields.values()):
-                    missing = [k for k, v in required_fields.items() if not v]
-                    print(f"Missing required fields for {naam}: {', '.join(missing)}")
+                    print(f"Geen telefoonnummer gevonden voor {row['fields.Naam klant']}, deze rij wordt overgeslagen")
                     continue
                 
                 send_whatsapp_message(
-                    naam=naam,
+                    naam=row['fields.Naam klant'],
                     dag=row['fields.Datum'],
                     tijdvak=row['fields.Tijdvak'],
-                    telefoon=row['fields.Mobielnummer']
+                    telefoon=row['fields.Mobielnummer'],
+                    reparatieduur=row['fields.Reparatieduur']
                 )
+                print(f"Bericht verstuurd voor {row['fields.Naam klant']}")
                 
             except Exception as e:
-                print(f"Error processing row {index}: {str(e)}")
+                print(f"Fout bij verwerken rij {index}: {str(e)}")
                 continue
     
     except Exception as e:
-        print(f"General error: {str(e)}")
+        print(f"Algemene fout: {str(e)}")
 
-def main():
-    # Start initial processing
-    print("Starting initial processing...")
-    process_data()
+# Start direct één verwerking
+print("Start eerste verwerking...")
+process_data()
 
-    # Schedule future processing
-    scheduler = BlockingScheduler()
-    scheduler.add_job(process_data, 'interval', minutes=30)
-
-    print("\nStarting scheduler...")
-    scheduler.start()
+# Schedule volgende verwerkingen
+scheduler = BlockingScheduler()
+scheduler.add_job(process_data, 'interval', minutes=30)
 
 if __name__ == "__main__":
-    main()
+    print("\nStarting scheduler...")
+    scheduler.start()
