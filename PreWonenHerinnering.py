@@ -9,6 +9,9 @@ AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
 AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')  # Bijvoorbeeld: "Projecten"
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 
+# WhatsApp template configuratie
+WHATSAPP_TEMPLATE_ID = 181327  # Pas dit aan naar het juiste template ID
+
 def get_airtable_data():
     """Haalt data op uit Airtable."""
     try:
@@ -55,17 +58,16 @@ def format_phone_number(phone):
     
     return phone
 
-# def send_whatsapp_message(naam, dag, tijdvak, telefoon, reparatieduur):
-def send_whatsapp_message(naam, dag, tijdvak, telefoon):
+def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
     """Verstuurt WhatsApp bericht via Trengo."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
     # Formatteer het telefoonnummer
-    formatted_phone = format_phone_number(telefoon)
+    formatted_phone = format_phone_number(mobielnummer)
     
     payload = {
         "recipient_phone_number": formatted_phone,
-        "hsm_id": 181327,
+        "hsm_id": WHATSAPP_TEMPLATE_ID,
         "params": [
             {
                 "type": "body",
@@ -75,18 +77,43 @@ def send_whatsapp_message(naam, dag, tijdvak, telefoon):
             {
                 "type": "body",
                 "key": "{{2}}",
-                "value": str(dag)
+                "value": str(monteur)
             },
             {
                 "type": "body",
                 "key": "{{3}}",
-                "value": str(tijdvak)
+                "value": str(dagnaam)
             },
-            # {
-            #     "type": "body",
-            #     "key": "{{4}}",
-            #     "value": str(reparatieduur)
-            # }
+            {
+                "type": "body",
+                "key": "{{4}}",
+                "value": str(datum)
+            },
+            {
+                "type": "body",
+                "key": "{{5}}",
+                "value": str(begintijd)
+            },
+            {
+                "type": "body",
+                "key": "{{6}}",
+                "value": str(eindtijd)
+            },
+            {
+                "type": "body",
+                "key": "{{7}}",
+                "value": str(reparatieduur)
+            },
+            {
+                "type": "body",
+                "key": "{{8}}",
+                "value": str(taaknummer)
+            },
+            {
+                "type": "body",
+                "key": "{{9}}",
+                "value": str(mobielnummer)
+            }
         ]
     }
     
@@ -130,10 +157,14 @@ def process_data():
                 
                 send_whatsapp_message(
                     naam=row['fields.Naam klant'],
-                    dag=row['fields.Datum'],
-                    tijdvak=row['fields.Tijdvak'],
-                    telefoon=row['fields.Mobielnummer'],
-                    # reparatieduur=row['fields.Reparatieduur']
+                    monteur=row['fields.Monteur'],
+                    dagnaam=row['fields.Dagnaam'],
+                    datum=row['fields.Datum'],
+                    begintijd=row['fields.Begintijd'],
+                    eindtijd=row['fields.Eindtijd'],
+                    reparatieduur=row['fields.Reparatieduur'],
+                    taaknummer=row['fields.Taaknummer'],
+                    mobielnummer=row['fields.Mobielnummer']
                 )
                 print(f"Bericht verstuurd voor {row['fields.Naam klant']}")
                 
