@@ -65,13 +65,6 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     # Formatteer het telefoonnummer
     formatted_phone = format_phone_number(mobielnummer)
     
-    # Converteer taaknummer naar integer
-    try:
-        formatted_taaknummer = str(int(float(taaknummer)))  # Converteert eerst naar float en dan naar int voor het geval er decimalen zijn
-    except (ValueError, TypeError):
-        print(f"Waarschuwing: Taaknummer '{taaknummer}' kon niet worden geconverteerd naar een geheel getal")
-        formatted_taaknummer = str(taaknummer)  # Gebruik originele waarde als fallback
-    
     payload = {
         "recipient_phone_number": formatted_phone,
         "hsm_id": WHATSAPP_TEMPLATE_ID,
@@ -119,7 +112,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {
                 "type": "body",
                 "key": "{{9}}",
-                "value": formatted_taaknummer
+                "value": str(taaknummer)
             }
         ]
     }
