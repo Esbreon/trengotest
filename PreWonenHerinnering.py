@@ -35,6 +35,9 @@ def get_airtable_data():
         # Converteer records naar een DataFrame
         df = pd.json_normalize(data['records'])
         
+        # Convert taaknummer to integer
+        df['fields.Taaknummer'] = df['fields.Taaknummer'].astype(int)
+        
         print(f"Data opgehaald. Aantal rijen: {len(df)}")
         print("Voorbeeld van opgehaalde data:")
         print(df.head())
