@@ -92,26 +92,31 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {
                 "type": "body",
                 "key": "{{5}}",
-                "value": str(begintijd)
+                "value": str(monteur)
             },
             {
                 "type": "body",
                 "key": "{{6}}",
-                "value": str(eindtijd)
+                "value": str(begintijd)
             },
             {
                 "type": "body",
                 "key": "{{7}}",
-                "value": str(reparatieduur)
+                "value": str(eindtijd)
             },
             {
                 "type": "body",
                 "key": "{{8}}",
-                "value": str(taaknummer)
+                "value": str(reparatieduur)
             },
             {
                 "type": "body",
                 "key": "{{9}}",
+                "value": str(taaknummer)
+            },
+            {
+                "type": "body",
+                "key": "{{10}}",
                 "value": str(mobielnummer)
             }
         ]
