@@ -69,17 +69,22 @@ def send_whatsapp_message(naam, dag, tijdvak, telefoon):
             {
                 "type": "body",
                 "key": "{{1}}",
-                "value": str(naam)
+                "value": str(Naam klant)
             },
             {
                 "type": "body",
                 "key": "{{2}}",
-                "value": str(dag)
+                "value": str(Datum)
             },
             {
                 "type": "body",
                 "key": "{{3}}",
-                "value": str(tijdvak)
+                "value": str(Tijdvak)
+            },
+            {
+                "type": "body",
+                "key": "{{4}}",
+                "value": str(Reparatieduur)
             }
         ]
     }
