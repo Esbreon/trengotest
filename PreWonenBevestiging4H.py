@@ -6,7 +6,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 # Airtable configuration
 AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
-AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')
+AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_PW4H')
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_PW_4H')
 
