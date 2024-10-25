@@ -8,7 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
 AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
-WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_PWB_TEST')
+WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_B_TEST')
 
 def get_airtable_data():
     """Fetches data from Airtable."""
