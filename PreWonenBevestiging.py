@@ -4,18 +4,16 @@ import pandas as pd
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-# Airtable configuratie
+# Airtable configuration
 AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
-AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')  # Bijvoorbeeld: "Projecten"
+AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_TABLE_NAME')
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
-
-# WhatsApp template configuratie
-WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID')
+WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_PWBev')
 
 def get_airtable_data():
-    """Haalt data op uit Airtable."""
+    """Fetches data from Airtable."""
     try:
-        print("Start ophalen Airtable data...")
+        print("Starting Airtable data fetch...")
         
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
         
@@ -24,50 +22,36 @@ def get_airtable_data():
             "Content-Type": "application/json"
         }
         
-        print("Verbinden met Airtable...")
-        
         response = requests.get(url, headers=headers)
         
         if response.status_code != 200:
-            raise Exception(f"Fout bij ophalen data: {response.status_code} - {response.text}")
+            raise Exception(f"Error fetching data: {response.status_code} - {response.text}")
+        
         data = response.json()
-        
-        # Converteer records naar een DataFrame
         df = pd.json_normalize(data['records'])
-        
-        # Convert taaknummer to integer
-        df['fields.Taaknummer'] = df['fields.Taaknummer'].astype(int)
-        
-        print(f"Data opgehaald. Aantal rijen: {len(df)}")
-        print("Voorbeeld van opgehaalde data:")
-        print(df.head())
+        print(f"Data retrieved. Row count: {len(df)}")
         return df
     
     except Exception as e:
-        print(f"Fout bij ophalen Airtable data: {str(e)}")
+        print(f"Error fetching Airtable data: {str(e)}")
         raise
 
 def format_phone_number(phone):
-    """Formatteert telefoonnummer naar het juiste formaat voor Trengo."""
-    # Verwijder alle niet-numerieke karakters
+    """Formats phone number for Trengo."""
     phone = ''.join(filter(str.isdigit, str(phone)))
-    
-    # Als het nummer met een 0 begint, vervang dit door 31
     if phone.startswith('0'):
         phone = '31' + phone[1:]
-    # Als het nummer nog niet met 31 begint, voeg het toe
     elif not phone.startswith('31'):
         phone = '31' + phone
-    
     return phone
 
-def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
-    """Verstuurt WhatsApp bericht via Trengo."""
+def send_whatsapp_message(naam_klant, datum, tijdvak, reparatieduur, mobielnummer):
+    """Sends WhatsApp message via Trengo with the new template format."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
-    # Formatteer het telefoonnummer
     formatted_phone = format_phone_number(mobielnummer)
     
+    # Format parameters according to the new template
     payload = {
         "recipient_phone_number": formatted_phone,
         "hsm_id": WHATSAPP_TEMPLATE_ID,
@@ -75,47 +59,22 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {
                 "type": "body",
                 "key": "{{1}}",
-                "value": str(naam)
+                "value": str(naam_klant)  # Name from first column
             },
             {
                 "type": "body",
                 "key": "{{2}}",
-                "value": str(monteur)
+                "value": str(datum)  # Date from second column
             },
             {
                 "type": "body",
                 "key": "{{3}}",
-                "value": str(dagnaam)
+                "value": str(tijdvak)  # Time slot from third column
             },
             {
                 "type": "body",
                 "key": "{{4}}",
-                "value": str(datum)
-            },
-            {
-                "type": "body",
-                "key": "{{5}}",
-                "value": str(monteur)
-            },
-            {
-                "type": "body",
-                "key": "{{6}}",
-                "value": str(begintijd)
-            },
-            {
-                "type": "body",
-                "key": "{{7}}",
-                "value": str(eindtijd)
-            },
-            {
-                "type": "body",
-                "key": "{{8}}",
-                "value": str(reparatieduur)
-            },
-            {
-                "type": "body",
-                "key": "{{9}}",
-                "value": str(taaknummer)
+                "value": str(reparatieduur)  # Duration from fourth column
             }
         ]
     }
@@ -127,62 +86,55 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     }
     
     try:
-        print(f"Versturen bericht naar {formatted_phone} voor {naam}...")
+        print(f"Sending message to {formatted_phone} for {naam_klant}...")
         response = requests.post(url, json=payload, headers=headers)
-        print(f"Response van Trengo: {response.text}")
+        print(f"Trengo response: {response.text}")
         return response.json()
     
     except Exception as e:
-        print(f"Fout bij versturen bericht: {str(e)}")
+        print(f"Error sending message: {str(e)}")
         raise
 
 def process_data():
-    """Hoofdfunctie die data ophaalt en berichten verstuurt."""
-    print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
+    """Main function to fetch data and send messages."""
+    print(f"\n=== Starting new processing: {datetime.now()} ===")
     
     try:
-        # Haal data op
         df = get_airtable_data()
         
         if df.empty:
-            print("Geen data gevonden om te verwerken")
+            print("No data found to process")
             return
         
-        # Verwerk elke rij
         for index, row in df.iterrows():
             try:
-                print(f"\nVerwerken rij {index + 1}: {row['fields.Naam klant']}")
+                print(f"\nProcessing row {index + 1}: {row['fields.Naam klant']}")
                 
-                # Controleer of het telefoonnummer aanwezig is
                 if 'fields.Mobielnummer' not in row or pd.isna(row['fields.Mobielnummer']):
-                    print(f"Geen telefoonnummer gevonden voor {row['fields.Naam klant']}, deze rij wordt overgeslagen")
+                    print(f"No phone number found for {row['fields.Naam klant']}, skipping row")
                     continue
                 
                 send_whatsapp_message(
-                    naam=row['fields.Naam klant'],
-                    monteur=row['fields.Monteur'],
-                    dagnaam=row['fields.Dagnaam'],
+                    naam_klant=row['fields.Naam klant'],
                     datum=row['fields.Datum'],
-                    begintijd=row['fields.Begintijd'],
-                    eindtijd=row['fields.Eindtijd'],
+                    tijdvak=row['fields.Tijdvak'],
                     reparatieduur=row['fields.Reparatieduur'],
-                    taaknummer=row['fields.Taaknummer'],
                     mobielnummer=row['fields.Mobielnummer']
                 )
-                print(f"Bericht verstuurd voor {row['fields.Naam klant']}")
+                print(f"Message sent for {row['fields.Naam klant']}")
                 
             except Exception as e:
-                print(f"Fout bij verwerken rij {index}: {str(e)}")
+                print(f"Error processing row {index}: {str(e)}")
                 continue
     
     except Exception as e:
-        print(f"Algemene fout: {str(e)}")
+        print(f"General error: {str(e)}")
 
-# Start direct één verwerking
-print("Start eerste verwerking...")
+# Start initial processing
+print("Starting first processing...")
 process_data()
 
-# Schedule volgende verwerkingen
+# Schedule future processing
 scheduler = BlockingScheduler()
 scheduler.add_job(process_data, 'interval', minutes=30)
 
