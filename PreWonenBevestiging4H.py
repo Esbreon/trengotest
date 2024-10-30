@@ -10,13 +10,25 @@ AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_PW4H')
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_PW_4H')
 
+def delete_airtable_record(record_id):
+    """Deletes a record from Airtable."""
+    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}/{record_id}"
+    headers = {
+        "Authorization": f"Bearer {AIRTABLE_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.delete(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Error deleting record: {response.status_code} - {response.text}")
+    print(f"Record {record_id} successfully deleted")
+
 def get_airtable_data():
     """Fetches data from Airtable."""
     try:
         print("Starting Airtable data fetch...")
         
         url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
-        
         headers = {
             "Authorization": f"Bearer {AIRTABLE_API_KEY}",
             "Content-Type": "application/json"
@@ -51,31 +63,14 @@ def send_whatsapp_message(naam_klant, datum, tijdvak, reparatieduur, mobielnumme
     
     formatted_phone = format_phone_number(mobielnummer)
     
-    # Format parameters according to the new template
     payload = {
         "recipient_phone_number": formatted_phone,
         "hsm_id": WHATSAPP_TEMPLATE_ID,
         "params": [
-            {
-                "type": "body",
-                "key": "{{1}}",
-                "value": str(naam_klant)  # Name from first column
-            },
-            {
-                "type": "body",
-                "key": "{{2}}",
-                "value": str(datum)  # Date from second column
-            },
-            {
-                "type": "body",
-                "key": "{{3}}",
-                "value": str(tijdvak)  # Time slot from third column
-            },
-            {
-                "type": "body",
-                "key": "{{4}}",
-                "value": str(reparatieduur)  # Duration from fourth column
-            }
+            {"type": "body", "key": "{{1}}", "value": str(naam_klant)},
+            {"type": "body", "key": "{{2}}", "value": str(datum)},
+            {"type": "body", "key": "{{3}}", "value": str(tijdvak)},
+            {"type": "body", "key": "{{4}}", "value": str(reparatieduur)}
         ]
     }
     
@@ -114,6 +109,7 @@ def process_data():
                     print(f"No phone number found for {row['fields.Naam klant']}, skipping row")
                     continue
                 
+                # Send message
                 send_whatsapp_message(
                     naam_klant=row['fields.Naam klant'],
                     datum=row['fields.Datum'],
@@ -121,7 +117,10 @@ def process_data():
                     reparatieduur=row['fields.Reparatieduur'],
                     mobielnummer=row['fields.Mobielnummer']
                 )
-                print(f"Message sent for {row['fields.Naam klant']}")
+                
+                # Delete record after successful send
+                delete_airtable_record(row['id'])
+                print(f"Message sent and record deleted for {row['fields.Naam klant']}")
                 
             except Exception as e:
                 print(f"Error processing row {index}: {str(e)}")
