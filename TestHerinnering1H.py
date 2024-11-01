@@ -110,18 +110,18 @@ def process_data():
         
         for index, row in df.iterrows():
             try:
-                print(f"\nVerwerken rij {index + 1}: {row['fields.Naam klant']}")
+                print(f"\nVerwerken rij {index + 1}: {row['fields.Naam bewoner']}")
                 
                 if 'fields.Mobielnummer' not in row or pd.isna(row['fields.Mobielnummer']):
-                    print(f"Geen telefoonnummer gevonden voor {row['fields.Naam klant']}, deze rij wordt overgeslagen")
+                    print(f"Geen telefoonnummer gevonden voor {row['fields.Naam bewoner']}, deze rij wordt overgeslagen")
                     continue
                 
                 # Verstuur bericht
                 send_whatsapp_message(
-                    naam=row['fields.Naam klant'],
+                    naam=row['fields.Naam bewoner'],
                     monteur=row['fields.Monteur'],
                     dagnaam=row['fields.Dagnaam'],
-                    datum=row['fields.Datum'],
+                    datum=row['fields.Datum bezoek'],
                     begintijd=row['fields.Begintijd'],
                     eindtijd=row['fields.Eindtijd'],
                     reparatieduur=row['fields.Reparatieduur'],
@@ -131,7 +131,7 @@ def process_data():
                 
                 # Verwijder record na succesvol versturen
                 delete_airtable_record(row['id'])
-                print(f"Bericht verstuurd en record verwijderd voor {row['fields.Naam klant']}")
+                print(f"Bericht verstuurd en record verwijderd voor {row['fields.Naam bewoner']}")
                 
             except Exception as e:
                 print(f"Fout bij verwerken rij {index}: {str(e)}")
