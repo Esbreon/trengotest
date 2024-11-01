@@ -61,8 +61,24 @@ def format_phone_number(phone):
     return phone
 
 def format_date(date_str):
-    """Formatteert datum naar dd MMM yy formaat."""
+    """Formatteert datum naar dd MMM yy formaat met Nederlandse maandafkortingen."""
     try:
+        # Nederlandse maandafkortingen
+        nl_month_abbr = {
+            1: 'jan',
+            2: 'feb',
+            3: 'mrt',
+            4: 'apr',
+            5: 'mei',
+            6: 'jun',
+            7: 'jul',
+            8: 'aug',
+            9: 'sep',
+            10: 'okt',
+            11: 'nov',
+            12: 'dec'
+        }
+        
         # Eerst proberen te parsen als datetime object
         if isinstance(date_str, datetime):
             date_obj = date_str
@@ -76,9 +92,15 @@ def format_date(date_str):
                 except ValueError:
                     date_obj = datetime.strptime(date_str, '%d-%m-%Y')
         
-        # Formatteer naar dd MMM yy met kleine letters
-        formatted_date = date_obj.strftime('%-d %b %y').lower()
+        # Haal dag en maandnummer op
+        day = date_obj.day
+        month = date_obj.month
+        year = str(date_obj.year)[2:]  # Laatste 2 cijfers van het jaar
+        
+        # Formatteer met Nederlandse maandafkorting
+        formatted_date = f"{day} {nl_month_abbr[month]} {year}"
         return formatted_date
+    
     except Exception as e:
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
         return date_str
