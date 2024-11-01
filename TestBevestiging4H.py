@@ -9,6 +9,51 @@ AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_T4H')
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_B_TEST')
 
+def format_date(date_str):
+    """Formatteert datum naar dd MMM yy formaat met Nederlandse maandafkortingen."""
+    try:
+        # Nederlandse maandafkortingen
+        nl_month_abbr = {
+            1: 'jan',
+            2: 'feb',
+            3: 'mrt',
+            4: 'apr',
+            5: 'mei',
+            6: 'jun',
+            7: 'jul',
+            8: 'aug',
+            9: 'sep',
+            10: 'okt',
+            11: 'nov',
+            12: 'dec'
+        }
+        
+        # Eerst proberen te parsen als datetime object
+        if isinstance(date_str, datetime):
+            date_obj = date_str
+        else:
+            # Probeer verschillende datumformaten die uit Airtable kunnen komen
+            try:
+                date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            except ValueError:
+                try:
+                    date_obj = datetime.strptime(date_str, '%d/%m/%Y')
+                except ValueError:
+                    date_obj = datetime.strptime(date_str, '%d-%m-%Y')
+        
+        # Haal dag en maandnummer op
+        day = date_obj.day
+        month = date_obj.month
+        year = str(date_obj.year)[2:]  # Laatste 2 cijfers van het jaar
+        
+        # Formatteer met Nederlandse maandafkorting
+        formatted_date = f"{day} {nl_month_abbr[month]} {year}"
+        return formatted_date
+    
+    except Exception as e:
+        print(f"Fout bij formatteren datum {date_str}: {str(e)}")
+        return date_str
+
 def delete_airtable_record(record_id):
     """Deletes a record from Airtable."""
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}/{record_id}"
@@ -60,13 +105,14 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
     """Sends WhatsApp message via Trengo with the new template format."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     formatted_phone = format_phone_number(mobielnummer)
+    formatted_date = format_date(datum)
     
     payload = {
         "recipient_phone_number": formatted_phone,
         "hsm_id": WHATSAPP_TEMPLATE_ID,
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
-            {"type": "body", "key": "{{2}}", "value": str(datum)},
+            {"type": "body", "key": "{{2}}", "value": formatted_date},
             {"type": "body", "key": "{{3}}", "value": str(tijdvak)},
             {"type": "body", "key": "{{4}}", "value": str(reparatieduur)}
         ]
