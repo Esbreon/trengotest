@@ -9,6 +9,35 @@ AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_V1H')
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_VESTEDA_1H')
 
+def format_date(date_str):
+    """Formatteert datum naar dd MMM yy formaat met Nederlandse maandafkortingen."""
+    try:
+        nl_month_abbr = {
+            1: 'jan', 2: 'feb', 3: 'mrt', 4: 'apr', 5: 'mei', 6: 'jun',
+            7: 'jul', 8: 'aug', 9: 'sep', 10: 'okt', 11: 'nov', 12: 'dec'
+        }
+        
+        if isinstance(date_str, datetime):
+            date_obj = date_str
+        else:
+            try:
+                date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            except ValueError:
+                try:
+                    date_obj = datetime.strptime(date_str, '%d/%m/%Y')
+                except ValueError:
+                    date_obj = datetime.strptime(date_str, '%d-%m-%Y')
+        
+        day = date_obj.day
+        month = date_obj.month
+        year = str(date_obj.year)[2:]
+        
+        return f"{day} {nl_month_abbr[month]} {year}"
+    
+    except Exception as e:
+        print(f"Fout bij formatteren datum {date_str}: {str(e)}")
+        return date_str
+
 def delete_airtable_record(record_id):
     """Deletes a record from Airtable."""
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}/{record_id}"
@@ -62,6 +91,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     """Verstuurt WhatsApp bericht via Trengo."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     formatted_phone = format_phone_number(mobielnummer)
+    formatted_date = format_date(datum)
     
     payload = {
         "recipient_phone_number": formatted_phone,
@@ -70,7 +100,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {"type": "body", "key": "{{1}}", "value": str(naam)},
             {"type": "body", "key": "{{2}}", "value": str(monteur)},
             {"type": "body", "key": "{{3}}", "value": str(dagnaam)},
-            {"type": "body", "key": "{{4}}", "value": str(datum)},
+            {"type": "body", "key": "{{4}}", "value": formatted_date},
             {"type": "body", "key": "{{5}}", "value": str(monteur)},
             {"type": "body", "key": "{{6}}", "value": str(begintijd)},
             {"type": "body", "key": "{{7}}", "value": str(eindtijd)},
@@ -90,7 +120,6 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
         response = requests.post(url, json=payload, headers=headers)
         print(f"Response van Trengo: {response.text}")
         return response.json()
-    
     except Exception as e:
         print(f"Fout bij versturen bericht: {str(e)}")
         raise
@@ -114,6 +143,7 @@ def process_data():
                     print(f"Geen telefoonnummer gevonden voor {row['fields.Naam bewoner']}, deze rij wordt overgeslagen")
                     continue
                 
+                # Send message
                 send_whatsapp_message(
                     naam=row['fields.Naam bewoner'],
                     monteur=row['fields.Monteur'],
