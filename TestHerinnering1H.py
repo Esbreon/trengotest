@@ -13,27 +13,14 @@ WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_G_TEST')
 def format_date(date_str):
     """Formatteert datum naar dd MMM yy formaat met Nederlandse maandafkortingen."""
     try:
-        # Nederlandse maandafkortingen
         nl_month_abbr = {
-            1: 'jan',
-            2: 'feb',
-            3: 'mrt',
-            4: 'apr',
-            5: 'mei',
-            6: 'jun',
-            7: 'jul',
-            8: 'aug',
-            9: 'sep',
-            10: 'okt',
-            11: 'nov',
-            12: 'dec'
+            1: 'jan', 2: 'feb', 3: 'mrt', 4: 'apr', 5: 'mei', 6: 'jun',
+            7: 'jul', 8: 'aug', 9: 'sep', 10: 'okt', 11: 'nov', 12: 'dec'
         }
         
-        # Eerst proberen te parsen als datetime object
         if isinstance(date_str, datetime):
             date_obj = date_str
         else:
-            # Probeer verschillende datumformaten die uit Airtable kunnen komen
             try:
                 date_obj = datetime.strptime(date_str, '%Y-%m-%d')
             except ValueError:
@@ -42,14 +29,11 @@ def format_date(date_str):
                 except ValueError:
                     date_obj = datetime.strptime(date_str, '%d-%m-%Y')
         
-        # Haal dag en maandnummer op
         day = date_obj.day
         month = date_obj.month
-        year = str(date_obj.year)[2:]  # Laatste 2 cijfers van het jaar
+        year = str(date_obj.year)[2:]
         
-        # Formatteer met Nederlandse maandafkorting
-        formatted_date = f"{day} {nl_month_abbr[month]} {year}"
-        return formatted_date
+        return f"{day} {nl_month_abbr[month]} {year}"
     
     except Exception as e:
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
@@ -125,3 +109,71 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {"type": "body", "key": "{{9}}", "value": str(taaknummer)}
         ]
     }
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "Authorization": "Bearer " + os.environ.get('TRENGO_API_KEY')
+    }
+    
+    try:
+        print(f"Versturen bericht naar {formatted_phone} voor {naam}...")
+        response = requests.post(url, json=payload, headers=headers)
+        print(f"Response van Trengo: {response.text}")
+        return response.json()
+    except Exception as e:
+        print(f"Fout bij versturen bericht: {str(e)}")
+        raise
+
+def process_data():
+    """Hoofdfunctie die data ophaalt en berichten verstuurt."""
+    print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
+    
+    try:
+        df = get_airtable_data()
+        
+        if df.empty:
+            print("Geen data gevonden om te verwerken")
+            return
+        
+        for index, row in df.iterrows():
+            try:
+                print(f"\nVerwerken rij {index + 1}: {row['fields.Naam bewoner']}")
+                
+                if 'fields.Mobielnummer' not in row or pd.isna(row['fields.Mobielnummer']):
+                    print(f"Geen telefoonnummer gevonden voor {row['fields.Naam bewoner']}, deze rij wordt overgeslagen")
+                    continue
+                
+                # Send message
+                send_whatsapp_message(
+                    naam=row['fields.Naam bewoner'],
+                    monteur=row['fields.Monteur'],
+                    dagnaam=row['fields.Dagnaam'],
+                    datum=row['fields.Datum bezoek'],
+                    begintijd=row['fields.Begintijd'],
+                    eindtijd=row['fields.Eindtijd'],
+                    reparatieduur=row['fields.Reparatieduur'],
+                    taaknummer=row['fields.Taaknummer'],
+                    mobielnummer=row['fields.Mobielnummer']
+                )
+                
+                # Delete record after successful send
+                delete_airtable_record(row['id'])
+                print(f"Bericht verstuurd en record verwijderd voor {row['fields.Naam bewoner']}")
+                
+            except Exception as e:
+                print(f"Fout bij verwerken rij {index}: {str(e)}")
+                continue
+    
+    except Exception as e:
+        print(f"Algemene fout: {str(e)}")
+
+print("Start eerste verwerking...")
+process_data()
+
+scheduler = BlockingScheduler()
+scheduler.add_job(process_data, 'interval', minutes=30)
+
+if __name__ == "__main__":
+    print("\nStarting scheduler...")
+    scheduler.start()
