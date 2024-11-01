@@ -57,7 +57,7 @@ def format_phone_number(phone):
         phone = '31' + phone
     return phone
 
-def send_whatsapp_message(naam_klant, datum, tijdvak, reparatieduur, mobielnummer):
+def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer):
     """Sends WhatsApp message via Trengo with the new template format."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
@@ -67,8 +67,8 @@ def send_whatsapp_message(naam_klant, datum, tijdvak, reparatieduur, mobielnumme
         "recipient_phone_number": formatted_phone,
         "hsm_id": WHATSAPP_TEMPLATE_ID,
         "params": [
-            {"type": "body", "key": "{{1}}", "value": str(naam_klant)},
-            {"type": "body", "key": "{{2}}", "value": str(datum)},
+            {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
+            {"type": "body", "key": "{{2}}", "value": str(datum_bezoek)},
             {"type": "body", "key": "{{3}}", "value": str(tijdvak)},
             {"type": "body", "key": "{{4}}", "value": str(reparatieduur)}
         ]
@@ -81,7 +81,7 @@ def send_whatsapp_message(naam_klant, datum, tijdvak, reparatieduur, mobielnumme
     }
     
     try:
-        print(f"Sending message to {formatted_phone} for {naam_klant}...")
+        print(f"Sending message to {formatted_phone} for {naam_bewoner}...")
         response = requests.post(url, json=payload, headers=headers)
         print(f"Trengo response: {response.text}")
         return response.json()
@@ -103,16 +103,16 @@ def process_data():
         
         for index, row in df.iterrows():
             try:
-                print(f"\nProcessing row {index + 1}: {row['fields.Naam klant']}")
+                print(f"\nProcessing row {index + 1}: {row['fields.Naam bewoner']}")
                 
                 if 'fields.Mobielnummer' not in row or pd.isna(row['fields.Mobielnummer']):
-                    print(f"No phone number found for {row['fields.Naam klant']}, skipping row")
+                    print(f"No phone number found for {row['fields.Naam bewoner']}, skipping row")
                     continue
                 
                 # Send message
                 send_whatsapp_message(
-                    naam_klant=row['fields.Naam klant'],
-                    datum=row['fields.Datum'],
+                    naam_bewoner=row['fields.Naam bewoner'],
+                    datum=row['fields.Datum bezoek'],
                     tijdvak=row['fields.Tijdvak'],
                     reparatieduur=row['fields.Reparatieduur'],
                     mobielnummer=row['fields.Mobielnummer']
@@ -120,7 +120,7 @@ def process_data():
                 
                 # Delete record after successful send
                 delete_airtable_record(row['id'])
-                print(f"Message sent and record deleted for {row['fields.Naam klant']}")
+                print(f"Message sent and record deleted for {row['fields.Naam bewoner']}")
                 
             except Exception as e:
                 print(f"Error processing row {index}: {str(e)}")
