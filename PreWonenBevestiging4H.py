@@ -10,30 +10,29 @@ AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_PW4H')
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_PW_4H')
 
+import os
+import requests
+import pandas as pd
+from datetime import datetime
+from apscheduler.schedulers.blocking import BlockingScheduler
+
+# Airtable configuration
+AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID')
+AIRTABLE_TABLE_NAME = os.environ.get('AIRTABLE_PW4H')  # Of T4H/V4H afhankelijk van het script
+AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
+WHATSAPP_TEMPLATE_ID = os.environ.get('WHATSAPP_TEMPLATE_ID_PW_4H')  # Aanpassen per versie
+
 def format_date(date_str):
     """Formatteert datum naar dd MMM yy formaat met Nederlandse maandafkortingen."""
     try:
-        # Nederlandse maandafkortingen
         nl_month_abbr = {
-            1: 'jan',
-            2: 'feb',
-            3: 'mrt',
-            4: 'apr',
-            5: 'mei',
-            6: 'jun',
-            7: 'jul',
-            8: 'aug',
-            9: 'sep',
-            10: 'okt',
-            11: 'nov',
-            12: 'dec'
+            1: 'jan', 2: 'feb', 3: 'mrt', 4: 'apr', 5: 'mei', 6: 'jun',
+            7: 'jul', 8: 'aug', 9: 'sep', 10: 'okt', 11: 'nov', 12: 'dec'
         }
         
-        # Eerst proberen te parsen als datetime object
         if isinstance(date_str, datetime):
             date_obj = date_str
         else:
-            # Probeer verschillende datumformaten die uit Airtable kunnen komen
             try:
                 date_obj = datetime.strptime(date_str, '%Y-%m-%d')
             except ValueError:
@@ -42,14 +41,11 @@ def format_date(date_str):
                 except ValueError:
                     date_obj = datetime.strptime(date_str, '%d-%m-%Y')
         
-        # Haal dag en maandnummer op
         day = date_obj.day
         month = date_obj.month
-        year = str(date_obj.year)[2:]  # Laatste 2 cijfers van het jaar
+        year = str(date_obj.year)[2:]
         
-        # Formatteer met Nederlandse maandafkorting
-        formatted_date = f"{day} {nl_month_abbr[month]} {year}"
-        return formatted_date
+        return f"{day} {nl_month_abbr[month]} {year}"
     
     except Exception as e:
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
@@ -130,7 +126,6 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
         response = requests.post(url, json=payload, headers=headers)
         print(f"Trengo response: {response.text}")
         return response.json()
-    
     except Exception as e:
         print(f"Error sending message: {str(e)}")
         raise
@@ -174,9 +169,11 @@ def process_data():
     except Exception as e:
         print(f"General error: {str(e)}")
 
+# Start initial processing
 print("Starting first processing...")
 process_data()
 
+# Schedule future processing
 scheduler = BlockingScheduler()
 scheduler.add_job(process_data, 'interval', minutes=30)
 
