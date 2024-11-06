@@ -1,14 +1,14 @@
 import msal
-import os
 import requests
+import os
 
 # Settings for OAuth2 authentication
 CLIENT_ID = os.getenv('AZURE_CLIENT_ID')
 CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 TENANT_ID = os.getenv('AZURE_TENANT_ID')
-OUTLOOK_EMAIL = os.getenv('OUTLOOK_EMAIL')
 
-def get_oauth2_token():
+def test_connection():
+    # Get OAuth2 token
     authority = f"https://login.microsoftonline.com/{TENANT_ID}"
     app = msal.ConfidentialClientApplication(
         CLIENT_ID,
@@ -16,70 +16,47 @@ def get_oauth2_token():
         client_credential=CLIENT_SECRET
     )
     
-    # Scopes for Microsoft Graph API
-    # You can adjust these based on your needs
-    scopes = [
-        "https://graph.microsoft.com/.default"
-    ]
+    # Request token with minimal scope
+    scopes = ["https://graph.microsoft.com/.default"]
     
     result = app.acquire_token_for_client(scopes=scopes)
-    if "access_token" in result:
-        print("Access token successfully obtained.")
-        return result['access_token']
-    else:
+    
+    if "access_token" not in result:
         print("Error getting token:", result.get("error_description"))
-        return None
+        return False
 
-def get_email_messages():
-    access_token = get_oauth2_token()
-    if not access_token:
-        print("No access token obtained, exiting...")
-        return
-
+    # Test connection with /me endpoint
     headers = {
-        'Authorization': f'Bearer {access_token}',
+        'Authorization': f'Bearer {result["access_token"]}',
         'Content-Type': 'application/json'
     }
 
-    # Base URL for Microsoft Graph API
-    graph_api_endpoint = 'https://graph.microsoft.com/v1.0'
-
     try:
-        # Get messages from inbox
-        # You can modify this endpoint based on your needs
-        messages_url = f"{graph_api_endpoint}/users/{OUTLOOK_EMAIL}/messages"
+        # Simple test using organization endpoint
+        response = requests.get(
+            'https://graph.microsoft.com/v1.0/organization',
+            headers=headers
+        )
         
-        # You can add query parameters for filtering, ordering, etc.
-        params = {
-            '$top': 10,  # Number of messages to retrieve
-            '$select': 'subject,receivedDateTime,from',  # Fields to retrieve
-            '$orderby': 'receivedDateTime DESC'  # Sort by date
-        }
-        
-        response = requests.get(messages_url, headers=headers, params=params)
-        response.raise_for_status()  # Raise an exception for bad status codes
-        
-        messages = response.json().get('value', [])
-        print(f"Successfully retrieved {len(messages)} messages!")
-        
-        # Print message details
-        for message in messages:
-            print(f"Subject: {message.get('subject')}")
-            print(f"From: {message.get('from', {}).get('emailAddress', {}).get('address')}")
-            print(f"Received: {message.get('receivedDateTime')}")
-            print("-" * 50)
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error accessing Graph API: {e}")
+        if response.status_code == 200:
+            print("Connection successful!")
+            print("Organization details:", response.json())
+            return True
+        else:
+            print(f"Connection failed with status code: {response.status_code}")
+            print("Error message:", response.text)
+            return False
+            
     except Exception as e:
-        print(f"General error: {e}")
+        print(f"Error testing connection: {e}")
+        return False
 
 if __name__ == "__main__":
     # Check for required environment variables
-    required_vars = ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID', 'OUTLOOK_EMAIL']
+    required_vars = ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
     if missing_vars:
         print(f"Error: Missing environment variables: {', '.join(missing_vars)}")
     else:
-        get_email_messages()
+        test_connection()
