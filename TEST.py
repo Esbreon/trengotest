@@ -6,7 +6,7 @@ def verify_permissions():
     """Verify Microsoft Graph API permissions and access using ROPC flow"""
     
     # Print environment variables check
-    env_vars = ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID', 'USER_EMAIL', 'USER_PASSWORD']
+    env_vars = ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID', 'OUTLOOK_EMAIL', 'OUTLOOK_PASSWORD']
     print("\nEnvironment Variables Check:")
     for var in env_vars:
         value = os.getenv(var)
