@@ -17,12 +17,8 @@ def test_minimal_connection():
         client_credential=CLIENT_SECRET
     )
     
-    # Updated scopes with correct permissions
-    scopes = [
-        "https://graph.microsoft.com/.default",
-        "Mail.Read",
-        "Mail.ReadBasic"
-    ]
+    # Use only the .default scope - the specific permissions are defined in Azure Portal
+    scopes = ["https://graph.microsoft.com/.default"]
     
     result = app.acquire_token_for_client(scopes=scopes)
     
