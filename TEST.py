@@ -7,6 +7,9 @@ CLIENT_ID = os.getenv('AZURE_CLIENT_ID')
 CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 TENANT_ID = os.getenv('AZURE_TENANT_ID')
 
+# Define the user ID or email to access their inbox
+USER_ID = "user@example.com"  # Replace with the actual user ID or email address
+
 def test_minimal_connection():
     # Get OAuth2 token
     authority = f"https://login.microsoftonline.com/{TENANT_ID}"
@@ -30,16 +33,16 @@ def test_minimal_connection():
     print("Token type:", result.get("token_type"))
     print("Expires in:", result.get("expires_in"), "seconds")
     
-    # Test connection by fetching the first 10 emails in the inbox
+    # Test connection by fetching the first 10 emails in the user's inbox
     headers = {
         'Authorization': f'Bearer {result["access_token"]}',
         'Content-Type': 'application/json'
     }
 
     try:
-        # Request to get the first 10 messages in the inbox
+        # Request to get the first 10 messages in the specified user's inbox
         response = requests.get(
-            'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=10',
+            f'https://graph.microsoft.com/v1.0/users/{USER_ID}/mailFolders/inbox/messages?$top=10',
             headers=headers
         )
         
