@@ -8,7 +8,7 @@ CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 TENANT_ID = os.getenv('AZURE_TENANT_ID')
 
 # Define the user ID or email to access their inbox
-USER_ID = "user@example.com"  # Replace with the actual user ID or email address
+USER_ID = "developer@boostix.nl"  # Replace with the actual user ID or email address
 
 def test_minimal_connection():
     # Get OAuth2 token
