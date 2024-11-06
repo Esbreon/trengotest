@@ -7,7 +7,7 @@ CLIENT_ID = os.getenv('AZURE_CLIENT_ID')
 CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 TENANT_ID = os.getenv('AZURE_TENANT_ID')
 
-def test_connection():
+def test_minimal_connection():
     # Get OAuth2 token
     authority = f"https://login.microsoftonline.com/{TENANT_ID}"
     app = msal.ConfidentialClientApplication(
@@ -22,31 +22,32 @@ def test_connection():
     result = app.acquire_token_for_client(scopes=scopes)
     
     if "access_token" not in result:
-        print("Error getting token:", result.get("error_description"))
+        print("Failed to get token!")
+        print("Error:", result.get("error_description"))
         return False
 
-    # Test connection with /me endpoint
+    print("Successfully obtained access token!")
+    print("Token type:", result.get("token_type"))
+    print("Expires in:", result.get("expires_in"), "seconds")
+    
+    # Test the most basic endpoint possible
     headers = {
         'Authorization': f'Bearer {result["access_token"]}',
         'Content-Type': 'application/json'
     }
 
     try:
-        # Simple test using organization endpoint
+        # Using root tenant endpoint which requires minimal permissions
         response = requests.get(
-            'https://graph.microsoft.com/v1.0/organization',
+            'https://graph.microsoft.com/v1.0/',
             headers=headers
         )
         
-        if response.status_code == 200:
-            print("Connection successful!")
-            print("Organization details:", response.json())
-            return True
-        else:
-            print(f"Connection failed with status code: {response.status_code}")
-            print("Error message:", response.text)
-            return False
-            
+        print(f"\nAPI Response Status Code: {response.status_code}")
+        print("API Response Content:", response.text)
+        
+        return response.status_code == 200
+
     except Exception as e:
         print(f"Error testing connection: {e}")
         return False
@@ -59,4 +60,4 @@ if __name__ == "__main__":
     if missing_vars:
         print(f"Error: Missing environment variables: {', '.join(missing_vars)}")
     else:
-        test_connection()
+        test_minimal_connection()
