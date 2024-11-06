@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 import pandas as pd
 from datetime import datetime
@@ -9,20 +10,29 @@ from email.header import decode_header
 
 def connect_to_outlook():
     """Maakt verbinding met Outlook."""
+    print("Verbinding maken met Outlook...")
     imap_server = "outlook.office365.com"
     email_address = os.environ.get('OUTLOOK_EMAIL')
     password = os.environ.get('OUTLOOK_PASSWORD')
     
     imap = imaplib.IMAP4_SSL(imap_server)
     imap.login(email_address, password)
+    print("Verbinding met Outlook succesvol")
     return imap
 
 def download_excel_attachment(imap, sender_email, subject_line):
     """Downloadt Excel bijlage uit specifieke email."""
+    print(f"\nZoeken naar emails van {sender_email} met onderwerp '{subject_line}'...")
     imap.select('INBOX')
     
-    search_criteria = f'(FROM "{sender_email}" SUBJECT "{subject_line}" UNSEEN)'  # Alleen ongelezen emails
+    search_criteria = f'(FROM "{sender_email}" SUBJECT "{subject_line}" UNSEEN)'
     _, message_numbers = imap.search(None, search_criteria)
+    
+    if not message_numbers[0]:
+        print("Geen nieuwe emails gevonden")
+        return None
+    
+    print("Nieuwe email(s) gevonden, bijlage controleren...")
     
     for num in message_numbers[0].split():
         _, msg_data = imap.fetch(num, '(RFC822)')
@@ -41,13 +51,17 @@ def download_excel_attachment(imap, sender_email, subject_line):
                 filepath = f"downloads/{datetime.now().strftime('%Y%m%d')}_{filename}"
                 os.makedirs('downloads', exist_ok=True)
                 
+                print(f"Excel bijlage gevonden: {filename}")
+                print(f"Opslaan als: {filepath}")
+                
                 with open(filepath, 'wb') as f:
                     f.write(part.get_payload(decode=True))
                 
-                # Markeer email als gelezen
                 imap.store(num, '+FLAGS', '\\Seen')
+                print("Email gemarkeerd als gelezen")
                 return filepath
     
+    print("Geen Excel bijlage gevonden in nieuwe emails")
     return None
 
 def format_date(date_str):
@@ -114,25 +128,28 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
     }
     
     try:
-        print(f"Sending message to TEST NUMBER {formatted_phone} for {naam_bewoner}...")
+        print(f"Versturen WhatsApp bericht naar TEST NUMMER {formatted_phone} voor {naam_bewoner}...")
+        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}")
         response = requests.post(url, json=payload, headers=headers)
         print(f"Trengo response: {response.text}")
         return response.json()
     except Exception as e:
-        print(f"Error sending message: {str(e)}")
+        print(f"Fout bij versturen bericht: {str(e)}")
         raise
 
 def process_excel_file(filepath):
     """Verwerkt Excel bestand en stuurt berichten."""
     try:
+        print(f"\nVerwerken Excel bestand: {filepath}")
         df = pd.read_excel(filepath)
         
         if df.empty:
-            print("No data found to process")
+            print("Geen data gevonden in Excel bestand")
             return
         
-        # Hier moeten we de kolomnamen mappen naar de verwachte velden
-        # Pas deze aan op basis van de Excel structuur
+        print(f"Aantal rijen gevonden: {len(df)}")
+        print(f"Kolommen in bestand: {', '.join(df.columns)}")
+        
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
             'Datum bezoek': 'fields.Datum bezoek',
@@ -145,8 +162,9 @@ def process_excel_file(filepath):
         
         for index, row in df.iterrows():
             try:
+                print(f"\nVerwerken rij {index + 1}/{len(df)}")
                 if pd.isna(row['fields.Mobielnummer']):
-                    print(f"No phone number found for {row['fields.Naam bewoner']}, skipping row")
+                    print(f"Geen telefoonnummer gevonden voor {row['fields.Naam bewoner']}, deze overslaan")
                     continue
                 
                 send_whatsapp_message(
@@ -157,18 +175,18 @@ def process_excel_file(filepath):
                     mobielnummer=row['fields.Mobielnummer']
                 )
                 
-                print(f"Message sent for {row['fields.Naam bewoner']}")
+                print(f"Bericht verstuurd voor {row['fields.Naam bewoner']}")
                 
             except Exception as e:
-                print(f"Error processing row {index}: {str(e)}")
+                print(f"Fout bij verwerken rij {index}: {str(e)}")
                 continue
                 
     except Exception as e:
-        print(f"Error processing Excel file: {str(e)}")
+        print(f"Fout bij verwerken Excel bestand: {str(e)}")
 
 def process_data():
     """Main function to check email and process Excel."""
-    print(f"\n=== Starting new processing: {datetime.now()} ===")
+    print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
     
     try:
         imap = connect_to_outlook()
@@ -182,20 +200,52 @@ def process_data():
             
             if excel_file:
                 process_excel_file(excel_file)
-                # Optioneel: verwijder het bestand na verwerking
+                print(f"\nVerwijderen tijdelijk bestand: {excel_file}")
                 os.remove(excel_file)
             else:
-                print("No new Excel files found to process")
+                print("Geen nieuwe Excel bestanden gevonden om te verwerken")
                 
         finally:
+            print("Outlook verbinding sluiten")
             imap.logout()
             
     except Exception as e:
-        print(f"General error: {str(e)}")
+        print(f"Algemene fout: {str(e)}")
 
-# Start scheduler
+# Start script
 if __name__ == "__main__":
+    print("\n=== ENVIRONMENT CHECK ===")
+    required_vars = [
+        'OUTLOOK_EMAIL', 
+        'OUTLOOK_PASSWORD', 
+        'SENDER_EMAIL', 
+        'SUBJECT_LINE',
+        'WHATSAPP_TEMPLATE_ID',
+        'TRENGO_API_KEY'
+    ]
+    
+    missing_vars = [var for var in required_vars if not os.environ.get(var)]
+    if missing_vars:
+        print(f"ERROR: Missende environment variables: {', '.join(missing_vars)}")
+        sys.exit(1)
+    
+    print("Alle environment variables zijn ingesteld")
+    
+    print("\n=== EERSTE TEST ===")
+    print("Handmatige test uitvoeren...")
+    try:
+        process_data()
+        print("Handmatige test compleet")
+    except Exception as e:
+        print(f"Fout tijdens handmatige test: {str(e)}")
+    
+    print("\n=== SCHEDULER STARTEN ===")
+    print("Automatische verwerking elke 30 minuten wordt gestart...")
     scheduler = BlockingScheduler()
     scheduler.add_job(process_data, 'interval', minutes=30)
-    print("\nStarting scheduler...")
-    scheduler.start()
+    
+    try:
+        print("Scheduler draait nu... (Ctrl+C om te stoppen)")
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        print('\nScript gestopt')
