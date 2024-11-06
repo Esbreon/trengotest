@@ -17,10 +17,18 @@ def test_minimal_connection():
         client_credential=CLIENT_SECRET
     )
     
-    # Use only the .default scope - the specific permissions are defined in Azure Portal
-    scopes = ["https://graph.microsoft.com/.default"]
+    # For delegated permissions, we need to acquire token on behalf of user
+    # First, get the authorization URL
+    scopes = ['Mail.Read', 'User.Read']
     
-    result = app.acquire_token_for_client(scopes=scopes)
+    # Try to get token from cache first
+    accounts = app.get_accounts()
+    if accounts:
+        # Assuming the first account is the one we want
+        result = app.acquire_token_silent(scopes, account=accounts[0])
+    else:
+        # If no cached token, acquire token using client credentials
+        result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
     
     if "access_token" not in result:
         print("Failed to get token!")
@@ -34,22 +42,12 @@ def test_minimal_connection():
     # Test connection with error handling
     headers = {
         'Authorization': f'Bearer {result["access_token"]}',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Prefer': 'outlook.body-content-type="text"'  # Request plain text body
     }
     
     try:
-        # First, verify if we can access the user
-        user_response = requests.get(
-            f'https://graph.microsoft.com/v1.0/users/{USER_ID}',
-            headers=headers
-        )
-        
-        if user_response.status_code != 200:
-            print(f"\nFailed to verify user access. Status Code: {user_response.status_code}")
-            print("Response:", user_response.text)
-            return False
-
-        # Then try to access emails
+        # Try to access emails
         response = requests.get(
             f'https://graph.microsoft.com/v1.0/users/{USER_ID}/mailFolders/inbox/messages?$top=10&$select=subject,from,receivedDateTime,bodyPreview',
             headers=headers
@@ -77,13 +75,16 @@ def test_minimal_connection():
             
             # Additional error handling for common status codes
             if response.status_code == 403:
-                print("\nPermission Error: Your application needs the following permissions in Azure AD:")
+                print("\nPermission Error: Make sure you have the following Delegated permissions in Azure AD:")
                 print("- Mail.Read")
-                print("- Mail.ReadBasic")
+                print("- User.Read")
                 print("\nPlease follow these steps:")
                 print("1. Go to Azure Portal > App Registrations > Your App > API Permissions")
-                print("2. Add the permissions listed above")
+                print("2. Add the permissions as 'Delegated permissions'")
                 print("3. Click on 'Grant admin consent' for your organization")
+                print("\nAlso verify that:")
+                print("- The user account has necessary mailbox permissions")
+                print("- The application has been granted consent by an administrator")
             elif response.status_code == 401:
                 print("\nAuthentication Error: Your token might be invalid or expired")
             
