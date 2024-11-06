@@ -3,66 +3,110 @@ import sys
 import requests
 import pandas as pd
 from datetime import datetime
+import msal
 from apscheduler.schedulers.blocking import BlockingScheduler
-import imaplib
-import email
-from email.header import decode_header
 
-def connect_to_outlook():
-    """Maakt verbinding met Outlook."""
-    print("Verbinding maken met Outlook...")
-    imap_server = "outlook.office365.com"
-    email_address = os.environ.get('OUTLOOK_EMAIL')
-    password = os.environ.get('OUTLOOK_PASSWORD')
-    
-    imap = imaplib.IMAP4_SSL(imap_server)
-    imap.login(email_address, password)
-    print("Verbinding met Outlook succesvol")
-    return imap
-
-def download_excel_attachment(imap, sender_email, subject_line):
-    """Downloadt Excel bijlage uit specifieke email."""
-    print(f"\nZoeken naar emails van {sender_email} met onderwerp '{subject_line}'...")
-    imap.select('INBOX')
-    
-    search_criteria = f'(FROM "{sender_email}" SUBJECT "{subject_line}" UNSEEN)'
-    _, message_numbers = imap.search(None, search_criteria)
-    
-    if not message_numbers[0]:
-        print("Geen nieuwe emails gevonden")
-        return None
-    
-    print("Nieuwe email(s) gevonden, bijlage controleren...")
-    
-    for num in message_numbers[0].split():
-        _, msg_data = imap.fetch(num, '(RFC822)')
-        email_body = msg_data[0][1]
-        msg = email.message_from_bytes(email_body)
+class OutlookClient:
+    def __init__(self):
+        self.client_id = os.getenv('AZURE_CLIENT_ID')
+        self.client_secret = os.getenv('AZURE_CLIENT_SECRET')
+        self.tenant_id = os.getenv('AZURE_TENANT_ID')
+        self.username = os.getenv('OUTLOOK_EMAIL')
+        self.password = os.getenv('OUTLOOK_PASSWORD')
         
-        for part in msg.walk():
-            if part.get_content_maintype() == 'multipart':
-                continue
-            if part.get('Content-Disposition') is None:
-                continue
-                
-            filename = part.get_filename()
+        # Initialize MSAL client
+        self.app = msal.ConfidentialClientApplication(
+            client_id=self.client_id,
+            client_credential=self.client_secret,
+            authority=f"https://login.microsoftonline.com/{self.tenant_id}"
+        )
+        
+    def get_token(self):
+        """Get access token for Microsoft Graph API"""
+        result = self.app.acquire_token_by_username_password(
+            username=self.username,
+            password=self.password,
+            scopes=['Mail.Read', 'User.Read']
+        )
+        
+        if "access_token" not in result:
+            raise Exception(f"Failed to obtain token: {result.get('error_description')}")
             
-            if filename and filename.endswith('.xlsx'):
-                filepath = f"downloads/{datetime.now().strftime('%Y%m%d')}_{filename}"
-                os.makedirs('downloads', exist_ok=True)
+        return result["access_token"]
+
+    def download_excel_attachment(self, sender_email, subject_line):
+        """Downloads Excel attachment from specific email using Microsoft Graph API."""
+        print(f"\nZoeken naar emails van {sender_email} met onderwerp '{subject_line}'...")
+        
+        token = self.get_token()
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Search for unread emails matching criteria
+        filter_query = f"from/emailAddress/address eq '{sender_email}' and subject eq '{subject_line}' and isRead eq false"
+        url = f'https://graph.microsoft.com/v1.0/me/messages'
+        params = {
+            '$filter': filter_query,
+            '$select': 'id,subject,hasAttachments'
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        messages = response.json().get('value', [])
+        
+        if not messages:
+            print("Geen nieuwe emails gevonden")
+            return None
+            
+        print("Nieuwe email(s) gevonden, bijlage controleren...")
+        
+        for message in messages:
+            if not message.get('hasAttachments'):
+                continue
                 
-                print(f"Excel bijlage gevonden: {filename}")
-                print(f"Opslaan als: {filepath}")
-                
-                with open(filepath, 'wb') as f:
-                    f.write(part.get_payload(decode=True))
-                
-                imap.store(num, '+FLAGS', '\\Seen')
-                print("Email gemarkeerd als gelezen")
-                return filepath
-    
-    print("Geen Excel bijlage gevonden in nieuwe emails")
-    return None
+            # Get attachments for this message
+            message_id = message['id']
+            attachments_url = f'https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments'
+            attachments_response = requests.get(attachments_url, headers=headers)
+            attachments_response.raise_for_status()
+            
+            attachments = attachments_response.json().get('value', [])
+            
+            for attachment in attachments:
+                filename = attachment.get('name', '')
+                if filename.endswith('.xlsx'):
+                    print(f"Excel bijlage gevonden: {filename}")
+                    
+                    # Download attachment content
+                    content = attachment.get('contentBytes')
+                    if content:
+                        filepath = f"downloads/{datetime.now().strftime('%Y%m%d')}_{filename}"
+                        os.makedirs('downloads', exist_ok=True)
+                        
+                        print(f"Opslaan als: {filepath}")
+                        
+                        # Decode and save attachment
+                        import base64
+                        with open(filepath, 'wb') as f:
+                            f.write(base64.b64decode(content))
+                            
+                        # Mark message as read
+                        update_url = f'https://graph.microsoft.com/v1.0/me/messages/{message_id}'
+                        update_response = requests.patch(
+                            update_url,
+                            headers=headers,
+                            json={'isRead': True}
+                        )
+                        update_response.raise_for_status()
+                        print("Email gemarkeerd als gelezen")
+                        
+                        return filepath
+                        
+        print("Geen Excel bijlage gevonden in nieuwe emails")
+        return None
 
 def format_date(date_str):
     """Formatteert datum naar dd MMM yy formaat met Nederlandse maandafkortingen."""
@@ -105,9 +149,8 @@ def format_phone_number(phone):
 def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
-    # Gebruik vast test nummer
     test_nummer = "+31 6 53610195"
-    formatted_phone = format_phone_number(test_nummer)  # Gebruik test nummer ipv mobielnummer parameter
+    formatted_phone = format_phone_number(test_nummer)
     formatted_date = format_date(datum)
     
     payload = {
@@ -189,11 +232,10 @@ def process_data():
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
     
     try:
-        imap = connect_to_outlook()
+        outlook = OutlookClient()
         
         try:
-            excel_file = download_excel_attachment(
-                imap,
+            excel_file = outlook.download_excel_attachment(
                 sender_email=os.environ.get('SENDER_EMAIL'),
                 subject_line=os.environ.get('SUBJECT_LINE')
             )
@@ -205,9 +247,8 @@ def process_data():
             else:
                 print("Geen nieuwe Excel bestanden gevonden om te verwerken")
                 
-        finally:
-            print("Outlook verbinding sluiten")
-            imap.logout()
+        except Exception as e:
+            print(f"Fout bij verwerken emails: {str(e)}")
             
     except Exception as e:
         print(f"Algemene fout: {str(e)}")
@@ -216,8 +257,11 @@ def process_data():
 if __name__ == "__main__":
     print("\n=== ENVIRONMENT CHECK ===")
     required_vars = [
+        'AZURE_CLIENT_ID',
+        'AZURE_CLIENT_SECRET', 
+        'AZURE_TENANT_ID',
         'OUTLOOK_EMAIL', 
-        'OUTLOOK_PASSWORD', 
+        'OUTLOOK_PASSWORD',
         'SENDER_EMAIL', 
         'SUBJECT_LINE',
         'WHATSAPP_TEMPLATE_ID',
