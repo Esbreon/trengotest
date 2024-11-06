@@ -91,7 +91,9 @@ def format_phone_number(phone):
 def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     url = "https://app.trengo.com/api/v2/wa_sessions"
-    formatted_phone = format_phone_number(mobielnummer)
+    # Gebruik vast test nummer
+    test_nummer = "+31 6 53610195"
+    formatted_phone = format_phone_number(test_nummer)  # Gebruik test nummer ipv mobielnummer parameter
     formatted_date = format_date(datum)
     
     payload = {
@@ -112,7 +114,7 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
     }
     
     try:
-        print(f"Sending message to {formatted_phone} for {naam_bewoner}...")
+        print(f"Sending message to TEST NUMBER {formatted_phone} for {naam_bewoner}...")
         response = requests.post(url, json=payload, headers=headers)
         print(f"Trengo response: {response.text}")
         return response.json()
