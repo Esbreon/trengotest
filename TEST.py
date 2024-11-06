@@ -1,14 +1,13 @@
 import msal
-import imaplib
 import os
+import requests
 
-# Instellingen voor OAuth2-authenticatie
-CLIENT_ID = os.getenv('AZURE_CLIENT_ID')        # Client ID van de app-registratie in Azure
-CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET') # Client Secret van de app-registratie in Azure
-TENANT_ID = os.getenv('AZURE_TENANT_ID')         # Tenant ID van je Azure AD
-OUTLOOK_EMAIL = os.getenv('OUTLOOK_EMAIL')       # Het e-mailadres waarvoor je toegang wilt
+# Settings for OAuth2 authentication
+CLIENT_ID = os.getenv('AZURE_CLIENT_ID')
+CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET')
+TENANT_ID = os.getenv('AZURE_TENANT_ID')
+OUTLOOK_EMAIL = os.getenv('OUTLOOK_EMAIL')
 
-# Functie om OAuth2-toegangstoken te verkrijgen
 def get_oauth2_token():
     authority = f"https://login.microsoftonline.com/{TENANT_ID}"
     app = msal.ConfidentialClientApplication(
@@ -17,59 +16,70 @@ def get_oauth2_token():
         client_credential=CLIENT_SECRET
     )
     
-    # De scope specificeert de toegangsniveaus, hier voor de IMAP-service van Outlook
-    scope = ["https://outlook.office365.com/.default"]
+    # Scopes for Microsoft Graph API
+    # You can adjust these based on your needs
+    scopes = [
+        "https://graph.microsoft.com/.default"
+    ]
     
-    # Token ophalen met de `acquire_token_for_client` functie
-    result = app.acquire_token_for_client(scopes=scope)
+    result = app.acquire_token_for_client(scopes=scopes)
     if "access_token" in result:
-        print("Access token succesvol verkregen.")
+        print("Access token successfully obtained.")
         return result['access_token']
     else:
-        print("Error bij verkrijgen van token:", result.get("error_description"))
+        print("Error getting token:", result.get("error_description"))
         return None
 
-# Functie om verbinding te maken met de IMAP-server via OAuth2
-def connect_to_outlook_with_oauth():
+def get_email_messages():
     access_token = get_oauth2_token()
     if not access_token:
-        print("Geen toegangstoken verkregen, afsluiten...")
+        print("No access token obtained, exiting...")
         return
 
-    # IMAP-serverinstellingen
-    imap_server = "outlook.office365.com"
-    
-    try:
-        print("Verbinding maken met de IMAP-server...")
-        imap = imaplib.IMAP4_SSL(imap_server)
-        
-        # Opbouw van de OAuth2-authenticatiestring
-        auth_string = f"user={OUTLOOK_EMAIL}\x01auth=Bearer {access_token}\x01\x01"
-        imap.authenticate("XOAUTH2", lambda x: auth_string)
-        
-        print("Succesvol verbonden met de IMAP-server!")
-        
-        # Bijvoorbeeld: mappen ophalen om de verbinding te testen
-        status, mailboxes = imap.list()
-        if status == "OK":
-            print("Beschikbare mappen:")
-            for mailbox in mailboxes:
-                print(mailbox.decode())
-        
-        imap.logout()
-        
-    except imaplib.IMAP4.error as e:
-        print(f"IMAP fout: {e}")
-    except Exception as e:
-        print(f"Algemene fout: {e}")
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
 
-# Hoofdfunctie aanroepen
+    # Base URL for Microsoft Graph API
+    graph_api_endpoint = 'https://graph.microsoft.com/v1.0'
+
+    try:
+        # Get messages from inbox
+        # You can modify this endpoint based on your needs
+        messages_url = f"{graph_api_endpoint}/users/{OUTLOOK_EMAIL}/messages"
+        
+        # You can add query parameters for filtering, ordering, etc.
+        params = {
+            '$top': 10,  # Number of messages to retrieve
+            '$select': 'subject,receivedDateTime,from',  # Fields to retrieve
+            '$orderby': 'receivedDateTime DESC'  # Sort by date
+        }
+        
+        response = requests.get(messages_url, headers=headers, params=params)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        
+        messages = response.json().get('value', [])
+        print(f"Successfully retrieved {len(messages)} messages!")
+        
+        # Print message details
+        for message in messages:
+            print(f"Subject: {message.get('subject')}")
+            print(f"From: {message.get('from', {}).get('emailAddress', {}).get('address')}")
+            print(f"Received: {message.get('receivedDateTime')}")
+            print("-" * 50)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error accessing Graph API: {e}")
+    except Exception as e:
+        print(f"General error: {e}")
+
 if __name__ == "__main__":
-    # Zorg dat de benodigde omgevingsvariabelen aanwezig zijn
+    # Check for required environment variables
     required_vars = ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID', 'OUTLOOK_EMAIL']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
     if missing_vars:
-        print(f"Fout: Missende omgevingsvariabelen: {', '.join(missing_vars)}")
+        print(f"Error: Missing environment variables: {', '.join(missing_vars)}")
     else:
-        connect_to_outlook_with_oauth()
+        get_email_messages()
