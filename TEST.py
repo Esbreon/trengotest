@@ -30,21 +30,32 @@ def test_minimal_connection():
     print("Token type:", result.get("token_type"))
     print("Expires in:", result.get("expires_in"), "seconds")
     
-    # Test the most basic endpoint possible
+    # Test connection by fetching the first 10 emails in the inbox
     headers = {
         'Authorization': f'Bearer {result["access_token"]}',
         'Content-Type': 'application/json'
     }
 
     try:
-        # Using root tenant endpoint which requires minimal permissions
+        # Request to get the first 10 messages in the inbox
         response = requests.get(
-            'https://graph.microsoft.com/v1.0/',
+            'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=10',
             headers=headers
         )
         
         print(f"\nAPI Response Status Code: {response.status_code}")
-        print("API Response Content:", response.text)
+        
+        if response.status_code == 200:
+            emails = response.json().get('value', [])
+            print("\nDisplaying the first 10 emails in the inbox:")
+            for email in emails:
+                print("Subject:", email.get('subject', 'No Subject'))
+                print("From:", email.get('from', {}).get('emailAddress', {}).get('address', 'Unknown Sender'))
+                print("Received:", email.get('receivedDateTime', 'No Date'))
+                print("Preview:", email.get('bodyPreview', 'No Preview'))
+                print("\n" + "="*50 + "\n")
+        else:
+            print("Failed to retrieve emails. Response Content:", response.text)
         
         return response.status_code == 200
 
