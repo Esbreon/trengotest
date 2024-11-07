@@ -22,12 +22,12 @@ class OutlookClient:
         )
         
     def get_token(self):
-        """Get access token for Microsoft Graph API"""
-        result = self.app.acquire_token_by_username_password(
-            username=self.username,
-            password=self.password,
-            scopes=['Mail.Read', 'User.Read']
-        )
+    """Get access token for Microsoft Graph API"""
+    result = self.app.acquire_token_by_username_password(
+        username=self.username,
+        password=self.password,
+        scopes=['Mail.ReadWrite', 'User.Read']  # Mail.Read vervangen door Mail.ReadWrite
+    )
         
         if "access_token" not in result:
             raise Exception(f"Failed to obtain token: {result.get('error_description')}")
