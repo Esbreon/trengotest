@@ -26,7 +26,7 @@ class OutlookClient:
         result = self.app.acquire_token_by_username_password(
             username=self.username,
             password=self.password,
-            scopes=['Mail.ReadWrite', 'User.Read']  # Mail.Read vervangen door Mail.ReadWrite
+            scopes=['Mail.Read', 'User.Read'] 
         )
         
         if "access_token" not in result:
