@@ -2,3 +2,4 @@ requests==2.31.0
 Office365-REST-Python-Client==2.5.13
 pandas==2.2.0
 APScheduler==3.10.4
+openpyxl>=3.0.0
