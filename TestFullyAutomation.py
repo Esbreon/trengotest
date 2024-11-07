@@ -360,7 +360,7 @@ if __name__ == "__main__":
     scheduler.add_job(process_data, 'interval', minutes=30)
     
     try:
-        print("Scheduler draait nu... (Ctrl+C om te stoppen)")
+        print("Scheduler draait nu... (zet de Dyno uit onder 'Resources' om te stoppen)")
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         print('\nScript gestopt')
