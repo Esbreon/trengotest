@@ -195,6 +195,30 @@ def format_phone_number(phone):
         phone = '31' + phone
     return phone
 
+def format_time(time_str):
+    """Formatteert tijd naar HH:MM formaat zonder seconden."""
+    try:
+        if isinstance(time_str, str):
+            # Als het een string is, probeer verschillende formaten
+            try:
+                time_obj = datetime.strptime(time_str, '%H:%M:%S')
+            except ValueError:
+                try:
+                    time_obj = datetime.strptime(time_str, '%H:%M')
+                    return time_str  # Als het al in HH:MM formaat is, return direct
+                except ValueError:
+                    return time_str  # Als het geen geldig formaat is, return origineel
+            
+            return time_obj.strftime('%H:%M')
+        elif pd.isna(time_str):
+            return ""
+        else:
+            # Als het een datetime/time object is
+            return time_str.strftime('%H:%M')
+    except Exception as e:
+        print(f"Fout bij formatteren tijd {time_str}: {str(e)}")
+        return str(time_str)
+
 def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
@@ -204,6 +228,8 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     url = "https://app.trengo.com/api/v2/wa_sessions"
     formatted_phone = format_phone_number(mobielnummer)
     formatted_date = format_date(datum)
+    formatted_begintijd = format_time(begintijd)
+    formatted_eindtijd = format_time(eindtijd)
     
     payload = {
         "recipient_phone_number": formatted_phone,
@@ -214,8 +240,8 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {"type": "body", "key": "{{3}}", "value": str(dagnaam)},
             {"type": "body", "key": "{{4}}", "value": formatted_date},
             {"type": "body", "key": "{{5}}", "value": str(monteur)},
-            {"type": "body", "key": "{{6}}", "value": str(begintijd)},
-            {"type": "body", "key": "{{7}}", "value": str(eindtijd)},
+            {"type": "body", "key": "{{6}}", "value": formatted_begintijd},
+            {"type": "body", "key": "{{7}}", "value": formatted_eindtijd},
             {"type": "body", "key": "{{8}}", "value": str(reparatieduur)},
             {"type": "body", "key": "{{9}}", "value": str(taaknummer)}
         ]
@@ -229,7 +255,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     
     try:
         print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam}...")
-        print(f"Bericht details: Datum={formatted_date}, Begintijd={begintijd}, Eindtijd={eindtijd}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, Taaknummer={taaknummer}")
+        print(f"Bericht details: Datum={formatted_date}, Begintijd={formatted_begintijd}, Eindtijd={formatted_eindtijd}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, Taaknummer={taaknummer}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()  # Added to catch HTTP errors
         print(f"Trengo response: {response.text}")
