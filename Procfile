@@ -4,5 +4,6 @@ test3: python TestFullyAutomation.py
 test4: python TEST.py
 pw1: python PreWonenBevestiging4H.py
 pw2: python PreWonenHerinnering1H.py
+pw3: python PreWonenBevestiging.py
 vs1: python VestedaBevestiging4H.py
 vs2: python VestedaHerinnering1H.py
