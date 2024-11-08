@@ -195,25 +195,29 @@ def format_phone_number(phone):
         phone = '31' + phone
     return phone
 
-def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer):
+def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam_bewoner}")
         return
         
     url = "https://app.trengo.com/api/v2/wa_sessions"
-    test_nummer = "+31 6 53610195"  # Using test number for safety
-    formatted_phone = format_phone_number(test_nummer)
+    formatted_phone = format_phone_number(mobielnummer)
     formatted_date = format_date(datum)
     
     payload = {
         "recipient_phone_number": formatted_phone,
-        "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID'),
+        "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PW_1H'),
         "params": [
-            {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
-            {"type": "body", "key": "{{2}}", "value": formatted_date},
-            {"type": "body", "key": "{{3}}", "value": str(tijdvak)},
-            {"type": "body", "key": "{{4}}", "value": str(reparatieduur)}
+            {"type": "body", "key": "{{1}}", "value": str(naam)},
+            {"type": "body", "key": "{{2}}", "value": str(monteur)},
+            {"type": "body", "key": "{{3}}", "value": str(dagnaam)},
+            {"type": "body", "key": "{{4}}", "value": formatted_date},
+            {"type": "body", "key": "{{5}}", "value": str(monteur)},
+            {"type": "body", "key": "{{6}}", "value": str(begintijd)},
+            {"type": "body", "key": "{{7}}", "value": str(eindtijd)},
+            {"type": "body", "key": "{{8}}", "value": str(reparatieduur)},
+            {"type": "body", "key": "{{9}}", "value": str(taaknummer)}
         ]
     }
     
@@ -252,12 +256,18 @@ def process_excel_file(filepath):
         print(f"Aantal rijen gevonden: {len(df)}")
         print(f"Kolommen in bestand: {', '.join(df.columns)}")
         
+        # Updated column mapping to include all required fields
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
             'Datum bezoek': 'fields.Datum bezoek',
             'Tijdvak': 'fields.Tijdvak',
             'Reparatieduur': 'fields.Reparatieduur',
-            'Mobielnummer': 'fields.Mobielnummer'
+            'Mobielnummer': 'fields.Mobielnummer',
+            'Monteur': 'fields.Monteur',
+            'Dag': 'fields.Dagnaam',
+            'Begintijd': 'fields.Begintijd',
+            'Eindtijd': 'fields.Eindtijd',
+            'Taaknummer': 'fields.Taaknummer'
         }
         
         # Verify all required columns exist
@@ -267,9 +277,13 @@ def process_excel_file(filepath):
         
         df = df.rename(columns=column_mapping)
         
-        # Remove duplicates based on name and visit date
+        # Remove duplicates based on name, visit date, and task number
         df['fields.Datum bezoek'] = pd.to_datetime(df['fields.Datum bezoek'])
-        df_unique = df.drop_duplicates(subset=['fields.Naam bewoner', 'fields.Datum bezoek'])
+        df_unique = df.drop_duplicates(subset=[
+            'fields.Naam bewoner', 
+            'fields.Datum bezoek',
+            'fields.Taaknummer'
+        ])
         
         if len(df_unique) < len(df):
             print(f"Let op: {len(df) - len(df_unique)} dubbele afspraken verwijderd")
@@ -283,10 +297,14 @@ def process_excel_file(filepath):
                     continue
                 
                 send_whatsapp_message(
-                    naam_bewoner=row['fields.Naam bewoner'],
+                    naam=row['fields.Naam bewoner'],
+                    monteur=row['fields.Monteur'],
+                    dagnaam=row['fields.Dagnaam'],
                     datum=row['fields.Datum bezoek'],
-                    tijdvak=row['fields.Tijdvak'],
+                    begintijd=row['fields.Begintijd'],
+                    eindtijd=row['fields.Eindtijd'],
                     reparatieduur=row['fields.Reparatieduur'],
+                    taaknummer=row['fields.Taaknummer'],
                     mobielnummer=mobielnummer
                 )
                 
