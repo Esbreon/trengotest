@@ -202,12 +202,12 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
         return
         
     url = "https://app.trengo.com/api/v2/wa_sessions"
-    formatted_phone = format_phone_number(phone)
+    formatted_phone = format_phone_number(mobielnummer)
     formatted_date = format_date(datum)
     
     payload = {
         "recipient_phone_number": formatted_phone,
-        "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID'),
+        "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PW_4H'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
             {"type": "body", "key": "{{2}}", "value": formatted_date},
