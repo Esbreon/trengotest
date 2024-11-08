@@ -8,3 +8,5 @@ pw3: python PreWonenBevestiging.py
 pw4: python PreWonenHerinnering.py
 vs1: python VestedaBevestiging4H.py
 vs2: python VestedaHerinnering1H.py
+vs3: python VestedaBevestiging.py
+vs4: python VestedaHerinnering.py
