@@ -228,8 +228,8 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     }
     
     try:
-        print(f"Versturen WhatsApp bericht naar TEST NUMMER {formatted_phone} voor {naam_bewoner}...")
-        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}")
+        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam_bewoner}...")
+        print(f"Bericht details: Datum={formatted_date}, Begintijd={begintijd}, Eindtijd={eindtijd}, Dagnaam={dagnaam}, Reparatieduur={reparatieduur}, Monteur={Monteur}, Taaknummer={taaknummer}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()  # Added to catch HTTP errors
         print(f"Trengo response: {response.text}")
