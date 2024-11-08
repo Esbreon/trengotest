@@ -198,7 +198,7 @@ def format_phone_number(phone):
 def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
-        print(f"Geen geldig telefoonnummer voor {naam_bewoner}")
+        print(f"Geen geldig telefoonnummer voor {naam}")
         return
         
     url = "https://app.trengo.com/api/v2/wa_sessions"
@@ -228,8 +228,8 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     }
     
     try:
-        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam_bewoner}...")
-        print(f"Bericht details: Datum={formatted_date}, Begintijd={begintijd}, Eindtijd={eindtijd}, Dagnaam={dagnaam}, Reparatieduur={reparatieduur}, Monteur={Monteur}, Taaknummer={taaknummer}")
+        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam}...")
+        print(f"Bericht details: Datum={formatted_date}, Begintijd={begintijd}, Eindtijd={eindtijd}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, Taaknummer={taaknummer}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()  # Added to catch HTTP errors
         print(f"Trengo response: {response.text}")
@@ -256,15 +256,14 @@ def process_excel_file(filepath):
         print(f"Aantal rijen gevonden: {len(df)}")
         print(f"Kolommen in bestand: {', '.join(df.columns)}")
         
-        # Updated column mapping to include all required fields
+        # Updated column mapping to use "Dagnaam" instead of "Dag"
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
             'Datum bezoek': 'fields.Datum bezoek',
-            'Tijdvak': 'fields.Tijdvak',
             'Reparatieduur': 'fields.Reparatieduur',
             'Mobielnummer': 'fields.Mobielnummer',
             'Monteur': 'fields.Monteur',
-            'Dag': 'fields.Dagnaam',
+            'Dagnaam': 'fields.Dagnaam',
             'Begintijd': 'fields.Begintijd',
             'Eindtijd': 'fields.Eindtijd',
             'Taaknummer': 'fields.Taaknummer'
@@ -359,7 +358,7 @@ if __name__ == "__main__":
         'OUTLOOK_PASSWORD',
         'SENDER_EMAIL', 
         'SUBJECT_LINE',
-        'WHATSAPP_TEMPLATE_ID',
+        'WHATSAPP_TEMPLATE_ID_PW_1H',
         'TRENGO_API_KEY'
     ]
     
@@ -377,4 +376,4 @@ if __name__ == "__main__":
         print("Handmatige test compleet")
     except Exception as e:
         print(f"Fout tijdens handmatige test: {str(e)}")
-        sys.exit(1)  # Exit if initial
+        sys.exit(1)  # Exit if initial test fails
