@@ -223,7 +223,7 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
     }
     
     try:
-        print(f"Versturen WhatsApp bericht naar TEST NUMMER {formatted_phone} voor {naam_bewoner}...")
+        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam_bewoner}...")
         print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()  # Added to catch HTTP errors
