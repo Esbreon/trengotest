@@ -340,7 +340,7 @@ if __name__ == "__main__":
         'OUTLOOK_PASSWORD',
         'SENDER_EMAIL', 
         'SUBJECT_LINE',
-        'WHATSAPP_TEMPLATE_ID',
+        'WHATSAPP_TEMPLATE_ID_PW_4H',
         'TRENGO_API_KEY'
     ]
     
