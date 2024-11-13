@@ -316,7 +316,7 @@ def process_data():
         try:
             excel_file = outlook.download_excel_attachment(
                 sender_email=os.environ.get('SENDER_EMAIL'),
-                subject_line=os.environ.get('SUBJECT_LINE')
+                subject_line=os.environ.get('SUBJECT_LINE_PW_BEVESTIGING')
             )
             
             if excel_file:
@@ -346,7 +346,7 @@ if __name__ == "__main__":
         'OUTLOOK_EMAIL', 
         'OUTLOOK_PASSWORD',
         'SENDER_EMAIL', 
-        'SUBJECT_LINE',
+        'SUBJECT_LINE_PW_BEVESTIGING',
         'WHATSAPP_TEMPLATE_ID_PW_4H',
         'TRENGO_API_KEY'
     ]
