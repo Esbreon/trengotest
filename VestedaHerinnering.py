@@ -219,7 +219,7 @@ def format_time(time_str):
         print(f"Fout bij formatteren tijd {time_str}: {str(e)}")
         return str(time_str)
 
-def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, taaknummer, mobielnummer):
+def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam}")
@@ -243,7 +243,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {"type": "body", "key": "{{6}}", "value": formatted_begintijd},
             {"type": "body", "key": "{{7}}", "value": formatted_eindtijd},
             {"type": "body", "key": "{{8}}", "value": str(reparatieduur)},
-            {"type": "body", "key": "{{9}}", "value": str(taaknummer)}
+            {"type": "body", "key": "{{9}}", "value": str(dp_nummer)}
         ]
     }
     
@@ -255,9 +255,9 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     
     try:
         print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam}...")
-        print(f"Bericht details: Datum={formatted_date}, Begintijd={formatted_begintijd}, Eindtijd={formatted_eindtijd}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, Taaknummer={taaknummer}")
+        print(f"Bericht details: Datum={formatted_date}, Begintijd={formatted_begintijd}, Eindtijd={formatted_eindtijd}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, DP Nummer={dp_nummer}")
         response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()  # Added to catch HTTP errors
+        response.raise_for_status()
         print(f"Trengo response: {response.text}")
         return response.json()
     except requests.exceptions.HTTPError as e:
@@ -282,7 +282,6 @@ def process_excel_file(filepath):
         print(f"Aantal rijen gevonden: {len(df)}")
         print(f"Kolommen in bestand: {', '.join(df.columns)}")
         
-        # Updated column mapping to use "Dagnaam" instead of "Dag"
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
             'Datum bezoek': 'fields.Datum bezoek',
@@ -292,7 +291,7 @@ def process_excel_file(filepath):
             'Dagnaam': 'fields.Dagnaam',
             'Begintijd': 'fields.Begintijd',
             'Eindtijd': 'fields.Eindtijd',
-            'Taaknummer': 'fields.Taaknummer'
+            'DP Nummer': 'fields.DP Nummer'
         }
         
         # Verify all required columns exist
@@ -302,12 +301,12 @@ def process_excel_file(filepath):
         
         df = df.rename(columns=column_mapping)
         
-        # Remove duplicates based on name, visit date, and task number
+        # Remove duplicates based on name, visit date, and DP number
         df['fields.Datum bezoek'] = pd.to_datetime(df['fields.Datum bezoek'])
         df_unique = df.drop_duplicates(subset=[
             'fields.Naam bewoner', 
             'fields.Datum bezoek',
-            'fields.Taaknummer'
+            'fields.DP Nummer'
         ])
         
         if len(df_unique) < len(df):
@@ -329,7 +328,7 @@ def process_excel_file(filepath):
                     begintijd=row['fields.Begintijd'],
                     eindtijd=row['fields.Eindtijd'],
                     reparatieduur=row['fields.Reparatieduur'],
-                    taaknummer=row['fields.Taaknummer'],
+                    dp_nummer=row['fields.DP Nummer'],
                     mobielnummer=mobielnummer
                 )
                 
