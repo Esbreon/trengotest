@@ -195,7 +195,7 @@ def format_phone_number(phone):
         phone = '31' + phone
     return phone
 
-def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer):
+def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam_bewoner}")
@@ -212,7 +212,8 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
             {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
             {"type": "body", "key": "{{2}}", "value": formatted_date},
             {"type": "body", "key": "{{3}}", "value": str(tijdvak)},
-            {"type": "body", "key": "{{4}}", "value": str(reparatieduur)}
+            {"type": "body", "key": "{{4}}", "value": str(reparatieduur)},
+            {"type": "body", "key": "{{5}}", "value": str(dp_nummer)}
         ]
     }
     
@@ -224,9 +225,9 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
     
     try:
         print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam_bewoner}...")
-        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}")
+        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}, DP Nummer={dp_nummer}")
         response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()  # Added to catch HTTP errors
+        response.raise_for_status()
         print(f"Trengo response: {response.text}")
         return response.json()
     except requests.exceptions.HTTPError as e:
@@ -256,7 +257,8 @@ def process_excel_file(filepath):
             'Datum bezoek': 'fields.Datum bezoek',
             'Tijdvak': 'fields.Tijdvak',
             'Reparatieduur': 'fields.Reparatieduur',
-            'Mobielnummer': 'fields.Mobielnummer'
+            'Mobielnummer': 'fields.Mobielnummer',
+            'DP Nummer': 'fields.DP Nummer'
         }
         
         # Verify all required columns exist
@@ -266,9 +268,13 @@ def process_excel_file(filepath):
         
         df = df.rename(columns=column_mapping)
         
-        # Remove duplicates based on name and visit date
+        # Remove duplicates based on name, visit date and DP number
         df['fields.Datum bezoek'] = pd.to_datetime(df['fields.Datum bezoek'])
-        df_unique = df.drop_duplicates(subset=['fields.Naam bewoner', 'fields.Datum bezoek'])
+        df_unique = df.drop_duplicates(subset=[
+            'fields.Naam bewoner', 
+            'fields.Datum bezoek',
+            'fields.DP Nummer'
+        ])
         
         if len(df_unique) < len(df):
             print(f"Let op: {len(df) - len(df_unique)} dubbele afspraken verwijderd")
@@ -286,6 +292,7 @@ def process_excel_file(filepath):
                     datum=row['fields.Datum bezoek'],
                     tijdvak=row['fields.Tijdvak'],
                     reparatieduur=row['fields.Reparatieduur'],
+                    dp_nummer=row['fields.DP Nummer'],
                     mobielnummer=mobielnummer
                 )
                 
