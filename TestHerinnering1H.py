@@ -70,7 +70,7 @@ def get_airtable_data():
         data = response.json()
         
         df = pd.json_normalize(data['records'])
-        df['fields.Taaknummer'] = df['fields.Taaknummer'].astype(int)
+        df['fields.DP Nummer'] = df['fields.DP Nummer'].astype(int)
         
         print(f"Data opgehaald. Aantal rijen: {len(df)}")
         return df
