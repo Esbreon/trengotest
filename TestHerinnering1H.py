@@ -31,7 +31,7 @@ def format_date(date_str):
         
         day = date_obj.day
         month = date_obj.month
-        year = str(date_obj.year)[2:]
+        year = date_obj.year
         
         return f"{day} {nl_month_abbr[month]} {year}"
     
