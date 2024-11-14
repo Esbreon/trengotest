@@ -153,7 +153,7 @@ def process_data():
                     begintijd=row['fields.Begintijd'],
                     eindtijd=row['fields.Eindtijd'],
                     reparatieduur=row['fields.Reparatieduur'],
-                    taaknummer=row['fields.DP nummer'],
+                    taaknummer=row['fields.DP Nummer'],
                     mobielnummer=row['fields.Mobielnummer']
                 )
                 
