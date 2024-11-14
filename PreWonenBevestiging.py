@@ -156,11 +156,11 @@ class OutlookClient:
             raise
 
 def format_date(date_str):
-    """Formatteert datum naar dd MMM yy formaat met Nederlandse maandafkortingen."""
+    """Formatteert datum naar dd MMM yy formaat met Nederlandse maandnamen."""
     try:
         nl_month_abbr = {
-            1: 'jan', 2: 'feb', 3: 'mrt', 4: 'apr', 5: 'mei', 6: 'jun',
-            7: 'jul', 8: 'aug', 9: 'sep', 10: 'okt', 11: 'nov', 12: 'dec'
+            1: 'januari', 2: 'februari', 3: 'maart', 4: 'april', 5: 'mei', 6: 'juni',
+            7: 'juli', 8: 'augustus', 9: 'september', 10: 'oktober', 11: 'november', 12: 'december'
         }
         
         if isinstance(date_str, datetime):
@@ -176,7 +176,7 @@ def format_date(date_str):
         
         day = date_obj.day
         month = date_obj.month
-        year = str(date_obj.year)[2:]
+        year = date_obj.year
         
         return f"{day} {nl_month_abbr[month]} {year}"
     
