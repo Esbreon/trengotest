@@ -207,7 +207,7 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnum
     
     payload = {
         "recipient_phone_number": formatted_phone,
-        "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_VESTEDA_4H'),
+        "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_VES_BEVESTIGING'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
             {"type": "body", "key": "{{2}}", "value": formatted_date},
@@ -343,7 +343,7 @@ if __name__ == "__main__":
         'OUTLOOK_PASSWORD',
         'SENDER_EMAIL', 
         'SUBJECT_LINE_VES_BEVESTIGING',
-        'WHATSAPP_TEMPLATE_ID_VESTEDA_4H',
+        'WHATSAPP_TEMPLATE_ID_VES_BEVESTIGING',
         'TRENGO_API_KEY'
     ]
     
