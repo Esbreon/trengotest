@@ -6,7 +6,11 @@ pw1: python PreWonenBevestiging4H.py
 pw2: python PreWonenHerinnering1H.py
 pw3: python PreWonenBevestiging.py
 pw4: python PreWonenHerinnering.py
+pwFoto: PreWonenFotoVerzoek.py
+pwFeedback: PreWonenFeedback.py
 vs1: python VestedaBevestiging4H.py
 vs2: python VestedaHerinnering1H.py
 vs3: python VestedaBevestiging.py
 vs4: python VestedaHerinnering.py
+vesFoto: VestedaFotoVerzoek.py
+vesFeedback: VestedaFeedback.py
