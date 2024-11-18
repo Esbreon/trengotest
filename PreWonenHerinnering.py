@@ -185,9 +185,7 @@ def format_date(date_str):
         return date_str
 
 def format_phone_number(phone):
-    """Formats phone number for Trengo."""
-    if pd.isna(phone):
-        return None
+    """Formatteert telefoonnummer naar het juiste formaat voor Trengo."""
     phone = ''.join(filter(str.isdigit, str(phone)))
     if phone.startswith('0'):
         phone = '31' + phone[1:]
