@@ -166,7 +166,8 @@ def format_phone_number(phone):
         phone = '31' + phone
     return phone
 
-def send_whatsapp_message(naam, mobielnummer):
+
+def send_whatsapp_message(naam, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam}")
@@ -180,6 +181,7 @@ def send_whatsapp_message(naam, mobielnummer):
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_FB_PW'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam)},
+            {"type": "body", "key": "{{2}}", "value": str(dp_nummer)},
         ]
     }
     
@@ -190,7 +192,7 @@ def send_whatsapp_message(naam, mobielnummer):
     }
     
     try:
-        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam}...")
+        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam} (DP: {dp_nummer})...")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         print(f"Trengo response: {response.text}")
@@ -219,6 +221,7 @@ def process_excel_file(filepath):
         
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
+            'DP Nummer': 'fields.DP Nummer',
             'Mobielnummer': 'fields.Mobielnummer'
         }
         
@@ -229,9 +232,10 @@ def process_excel_file(filepath):
         
         df = df.rename(columns=column_mapping)
         
-        # Remove duplicates based on name
+        # Remove duplicates based on name and DP number
         df_unique = df.drop_duplicates(subset=[
-            'fields.Naam bewoner'
+            'fields.Naam bewoner',
+            'fields.DP Nummer'
         ])
         
         if len(df_unique) < len(df):
@@ -247,10 +251,11 @@ def process_excel_file(filepath):
                 
                 send_whatsapp_message(
                     naam=row['fields.Naam bewoner'],
+                    dp_nummer=row['fields.DP Nummer'],
                     mobielnummer=mobielnummer
                 )
                 
-                print(f"Bericht verstuurd voor {row['fields.Naam bewoner']}")
+                print(f"Bericht verstuurd voor {row['fields.Naam bewoner']} (DP: {row['fields.DP Nummer']})")
                 
             except Exception as e:
                 print(f"Fout bij verwerken rij {index}: {str(e)}")
