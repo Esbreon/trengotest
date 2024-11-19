@@ -207,7 +207,6 @@ def send_whatsapp_message(naam, dp_nummer, mobielnummer):
         raise
 
 def process_excel_file(filepath):
-    """Verwerkt Excel bestand en stuurt berichten."""
     try:
         print(f"\nVerwerken Excel bestand: {filepath}")
         df = pd.read_excel(filepath)
@@ -221,22 +220,17 @@ def process_excel_file(filepath):
         
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
-            'DP Nummer': 'fields.DP Nummer',
+            'DP Nummer': 'fields.DP Nummer', 
             'Mobielnummer': 'fields.Mobielnummer'
         }
         
-        # Verify all required columns exist
         missing_columns = [col for col in column_mapping.keys() if col not in df.columns]
         if missing_columns:
             raise ValueError(f"Missende kolommen in Excel: {', '.join(missing_columns)}")
         
         df = df.rename(columns=column_mapping)
         
-        # Remove duplicates based on name and DP number
-        df_unique = df.drop_duplicates(subset=[
-            'fields.Naam bewoner',
-            'fields.DP Nummer'
-        ])
+        df_unique = df.drop_duplicates(subset=['fields.DP Nummer'])
         
         if len(df_unique) < len(df):
             print(f"Let op: {len(df) - len(df_unique)} dubbele afspraken verwijderd")
@@ -264,7 +258,7 @@ def process_excel_file(filepath):
     except Exception as e:
         print(f"Fout bij verwerken Excel bestand: {str(e)}")
         raise
-
+        
 def process_data():
     """Main function to check email and process Excel."""
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
