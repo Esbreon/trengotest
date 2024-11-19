@@ -166,7 +166,6 @@ def format_phone_number(phone):
         phone = '31' + phone
     return phone
 
-
 def send_whatsapp_message(naam, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
