@@ -166,7 +166,7 @@ def format_phone_number(phone):
         phone = '31' + phone
     return phone
 
-def send_whatsapp_message(naam, mobielnummer):
+def send_whatsapp_message(naam, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam}")
@@ -180,6 +180,7 @@ def send_whatsapp_message(naam, mobielnummer):
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_FV_VES'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam)},
+            {"type": "body", "key": "{{2}}", "value": str(dp_nummer)},
         ]
     }
     
@@ -190,7 +191,7 @@ def send_whatsapp_message(naam, mobielnummer):
     }
     
     try:
-        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam}...")
+        print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam} (DP: {dp_nummer})...")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         print(f"Trengo response: {response.text}")
@@ -205,7 +206,6 @@ def send_whatsapp_message(naam, mobielnummer):
         raise
 
 def process_excel_file(filepath):
-    """Verwerkt Excel bestand en stuurt berichten."""
     try:
         print(f"\nVerwerken Excel bestand: {filepath}")
         df = pd.read_excel(filepath)
@@ -223,17 +223,13 @@ def process_excel_file(filepath):
             'Mobielnummer': 'fields.Mobielnummer'
         }
         
-        # Verify all required columns exist
         missing_columns = [col for col in column_mapping.keys() if col not in df.columns]
         if missing_columns:
             raise ValueError(f"Missende kolommen in Excel: {', '.join(missing_columns)}")
         
         df = df.rename(columns=column_mapping)
         
-        # Remove duplicates based on DP number
-        df_unique = df.drop_duplicates(subset=[
-            'fields.DP Nummer'
-        ])
+        df_unique = df.drop_duplicates(subset=['fields.DP Nummer'])
         
         if len(df_unique) < len(df):
             print(f"Let op: {len(df) - len(df_unique)} dubbele afspraken verwijderd")
@@ -248,10 +244,11 @@ def process_excel_file(filepath):
                 
                 send_whatsapp_message(
                     naam=row['fields.Naam bewoner'],
+                    dp_nummer=row['fields.DP Nummer'],
                     mobielnummer=mobielnummer
                 )
                 
-                print(f"Bericht verstuurd voor {row['fields.Naam bewoner']}")
+                print(f"Bericht verstuurd voor {row['fields.Naam bewoner']} (DP: {row['fields.DP Nummer']})")
                 
             except Exception as e:
                 print(f"Fout bij verwerken rij {index}: {str(e)}")
@@ -260,7 +257,7 @@ def process_excel_file(filepath):
     except Exception as e:
         print(f"Fout bij verwerken Excel bestand: {str(e)}")
         raise
-
+        
 def process_data():
     """Main function to check email and process Excel."""
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
