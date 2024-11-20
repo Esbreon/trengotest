@@ -185,21 +185,13 @@ def format_date(date_str):
         return date_str
 
 def format_phone_number(phone):
-    """Formats phone number for Trengo with correct Dutch mobile format."""
+    """Returns the phone number as-is if already correctly formatted."""
     if pd.isna(phone):
         return None
-        
-    # Remove all non-digits
-    phone = ''.join(filter(str.isdigit, str(phone)))
     
-    # Als het nummer met 06 begint, vervang door 316
-    if phone.startswith('06'):
-        phone = '316' + phone[2:]
-    # Als het nummer met 6 begint, voeg 31 toe
-    elif phone.startswith('6'):
-        phone = '31' + phone
-    
-    return phone
+    phone = str(phone).strip() 
+    return phone 
+
 
 def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer, dp_nummer):
     """Sends WhatsApp message via Trengo with the template."""
