@@ -185,13 +185,13 @@ def format_date(date_str):
         return date_str
 
 def format_phone_number(phone):
-    """Returns the phone number as-is if already correctly formatted."""
+    """Zorg dat telefoonnummer correct wordt geformatteerd."""
     if pd.isna(phone):
-        return None
-    
-    phone = str(phone).strip() 
-    return phone 
-
+        return None  # Geen telefoonnummer
+    phone = str(phone).strip()  # Strip spaties en zorg voor string
+    if phone.endswith('.0'):  # Verwijder onnodige .0
+        phone = phone.split('.')[0]
+    return phone
 
 def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer, dp_nummer):
     """Sends WhatsApp message via Trengo with the template."""
