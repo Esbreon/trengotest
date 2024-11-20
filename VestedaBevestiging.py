@@ -185,26 +185,20 @@ def format_date(date_str):
         return date_str
 
 def format_phone_number(phone):
-    """Formats phone number for Trengo with 11 character limit."""
+    """Formats phone number for Trengo with correct Dutch mobile format."""
     if pd.isna(phone):
         return None
+        
     # Remove all non-digits
     phone = ''.join(filter(str.isdigit, str(phone)))
     
-    # Take last 9 digits if number is too long
-    if len(phone) > 9:
-        phone = phone[-9:]
-        
-    # Add country code
-    if phone.startswith('0'):
-        phone = '31' + phone[1:]
-    elif not phone.startswith('31'):
+    # Als het nummer met 06 begint, vervang door 316
+    if phone.startswith('06'):
+        phone = '316' + phone[2:]
+    # Als het nummer met 6 begint, voeg 31 toe
+    elif phone.startswith('6'):
         phone = '31' + phone
-        
-    # Ensure total length is 11 characters
-    if len(phone) > 11:
-        phone = phone[:11]
-        
+    
     return phone
 
 def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, mobielnummer, dp_nummer):
