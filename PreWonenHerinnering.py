@@ -185,12 +185,26 @@ def format_date(date_str):
         return date_str
 
 def format_phone_number(phone):
-    """Formatteert telefoonnummer naar het juiste formaat voor Trengo."""
+    """Formats phone number for Trengo with 11 character limit."""
+    if pd.isna(phone):
+        return None
+    # Remove all non-digits
     phone = ''.join(filter(str.isdigit, str(phone)))
+    
+    # Take last 9 digits if number is too long
+    if len(phone) > 9:
+        phone = phone[-9:]
+        
+    # Add country code
     if phone.startswith('0'):
         phone = '31' + phone[1:]
     elif not phone.startswith('31'):
         phone = '31' + phone
+        
+    # Ensure total length is 11 characters
+    if len(phone) > 11:
+        phone = phone[:11]
+        
     return phone
 
 def format_time(time_str):
