@@ -160,7 +160,7 @@ class OutlookClient:
 def format_date(date_str):
     """Formatteert datum naar dd MMM yy formaat met Nederlandse maandnamen."""
     try:
-        nl_month_abbr = {
+        nl_month = {
             1: 'januari', 2: 'februari', 3: 'maart', 4: 'april', 5: 'mei', 6: 'juni',
             7: 'juli', 8: 'augustus', 9: 'september', 10: 'oktober', 11: 'november', 12: 'december'
         }
@@ -180,7 +180,7 @@ def format_date(date_str):
         month = date_obj.month
         year = date_obj.year
         
-        return f"{day} {nl_month_abbr[month]} {year}"
+        return f"{day} {nl_month[month]} {year}"
     
     except Exception as e:
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
