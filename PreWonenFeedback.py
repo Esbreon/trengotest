@@ -158,14 +158,12 @@ class OutlookClient:
             raise
 
 def format_phone_number(phone):
-    """Formats phone number for Trengo."""
+    """Zorg dat telefoonnummer correct wordt geformatteerd."""
     if pd.isna(phone):
-        return None
-    phone = ''.join(filter(str.isdigit, str(phone)))
-    if phone.startswith('0'):
-        phone = '31' + phone[1:]
-    elif not phone.startswith('31'):
-        phone = '31' + phone
+        return None  # Geen telefoonnummer
+    phone = str(phone).strip()  # Strip spaties en zorg voor string
+    if phone.endswith('.0'):  # Verwijder onnodige .0
+        phone = phone.split('.')[0]
     return phone
 
 def send_whatsapp_message(naam, dp_nummer, mobielnummer):
