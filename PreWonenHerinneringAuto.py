@@ -368,7 +368,7 @@ def main():
     scheduler = BlockingScheduler(timezone=pytz.timezone('Europe/Amsterdam'))
     
     # Schedule process_data to run at 17:30 every weekday (Mon-Fri)
-    scheduler.add_job(process_data, CronTrigger(day_of_week='mon-fri', hour=17, minute=30))
+    scheduler.add_job(process_data, CronTrigger(day_of_week='mon-fri', hour=14, minute=00))
     
     print("\nScheduler gestart, wacht op geplande taken...")
     try:
