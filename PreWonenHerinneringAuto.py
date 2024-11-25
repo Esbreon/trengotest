@@ -186,16 +186,31 @@ def format_date(date_str):
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
         return date_str
 
-def format_phone_number(phone):
-    """Zorg dat telefoonnummer correct wordt geformatteerd."""
-    if pd.isna(phone):
-        return None  # Geen telefoonnummer
-    phone = str(phone).strip()  # Strip spaties en zorg voor string
-    if phone.endswith('.0'):  # Verwijder onnodige .0
-        phone = phone.split('.')[0]
-    return phone
+def format_time(time_str):
+    """Formatteert tijd naar HH:MM formaat zonder seconden."""
+    try:
+        if isinstance(time_str, str):
+            # Als het een string is, probeer verschillende formaten
+            try:
+                time_obj = datetime.strptime(time_str, '%H:%M:%S')
+            except ValueError:
+                try:
+                    time_obj = datetime.strptime(time_str, '%H:%M')
+                    return time_str  # Als het al in HH:MM formaat is, return direct
+                except ValueError:
+                    return time_str  # Als het geen geldig formaat is, return origineel
+            
+            return time_obj.strftime('%H:%M')
+        elif pd.isna(time_str):
+            return ""
+        else:
+            # Als het een datetime/time object is
+            return time_str.strftime('%H:%M')
+    except Exception as e:
+        print(f"Fout bij formatteren tijd {time_str}: {str(e)}")
+        return str(time_str)
 
-def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer):
+def send_whatsapp_message(naam_bewoner, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam_bewoner}")
@@ -204,16 +219,22 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, dp_nummer
     url = "https://app.trengo.com/api/v2/wa_sessions"
     formatted_phone = format_phone_number(mobielnummer)
     formatted_date = format_date(datum)
+    formatted_begintijd = format_time(begintijd)
+    formatted_eindtijd = format_time(eindtijd)
     
     payload = {
         "recipient_phone_number": formatted_phone,
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PW_HERINNERING'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
-            {"type": "body", "key": "{{2}}", "value": formatted_date},
-            {"type": "body", "key": "{{3}}", "value": str(tijdvak)},
-            {"type": "body", "key": "{{4}}", "value": str(reparatieduur)},
-            {"type": "body", "key": "{{5}}", "value": str(dp_nummer)}
+            {"type": "body", "key": "{{2}}", "value": str(monteur)},
+            {"type": "body", "key": "{{3}}", "value": str(dagnaam)},
+            {"type": "body", "key": "{{4}}", "value": formatted_date},
+            {"type": "body", "key": "{{5}}", "value": str(monteur)},
+            {"type": "body", "key": "{{6}}", "value": formatted_begintijd},
+            {"type": "body", "key": "{{7}}", "value": formatted_eindtijd},
+            {"type": "body", "key": "{{8}}", "value": str(reparatieduur)},
+            {"type": "body", "key": "{{9}}", "value": str(dp_nummer)}
         ]
     }
     
@@ -225,7 +246,7 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, dp_nummer
     
     try:
         print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam_bewoner}...")
-        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}, DP Nummer={dp_nummer}")
+        print(f"Bericht details: Datum={formatted_date}, Begintijd={formatted_begintijd}, Eindtijd={formatted_eindtijd}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, DP Nummer={dp_nummer}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         print(f"Trengo response: {response.text}")
@@ -255,9 +276,12 @@ def process_excel_file(filepath):
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
             'Datum bezoek': 'fields.Datum bezoek',
-            'Tijdvak': 'fields.Tijdvak',
             'Reparatieduur': 'fields.Reparatieduur',
             'Mobielnummer': 'fields.Mobielnummer',
+            'Monteur': 'fields.Monteur',
+            'Dagnaam': 'fields.Dagnaam',
+            'Begintijd': 'fields.Begintijd',
+            'Eindtijd': 'fields.Eindtijd',
             'DP Nummer': 'fields.DP Nummer'
         }
         
@@ -289,8 +313,11 @@ def process_excel_file(filepath):
                 
                 send_whatsapp_message(
                     naam_bewoner=row['fields.Naam bewoner'],
+                    monteur=row['fields.Monteur'],
+                    dagnaam=row['fields.Dagnaam'],
                     datum=row['fields.Datum bezoek'],
-                    tijdvak=row['fields.Tijdvak'],
+                    begintijd=row['fields.Begintijd'],
+                    eindtijd=row['fields.Eindtijd'],
                     reparatieduur=row['fields.Reparatieduur'],
                     dp_nummer=row['fields.DP Nummer'],
                     mobielnummer=mobielnummer
@@ -305,7 +332,7 @@ def process_excel_file(filepath):
     except Exception as e:
         print(f"Fout bij verwerken Excel bestand: {str(e)}")
         raise
-
+        
 def process_data():
     """Main function to check email and process Excel."""
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
