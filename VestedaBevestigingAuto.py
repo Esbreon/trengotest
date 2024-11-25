@@ -5,6 +5,8 @@ import pandas as pd
 from datetime import datetime
 import msal
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
 
 class OutlookClient:
     def __init__(self):
@@ -158,7 +160,7 @@ class OutlookClient:
 def format_date(date_str):
     """Formatteert datum naar dd MMM yy formaat met Nederlandse maandnamen."""
     try:
-        nl_month = {
+        nl_month_abbr = {
             1: 'januari', 2: 'februari', 3: 'maart', 4: 'april', 5: 'mei', 6: 'juni',
             7: 'juli', 8: 'augustus', 9: 'september', 10: 'oktober', 11: 'november', 12: 'december'
         }
@@ -178,7 +180,7 @@ def format_date(date_str):
         month = date_obj.month
         year = date_obj.year
         
-        return f"{day} {nl_month[month]} {year}"
+        return f"{day} {nl_month_abbr[month]} {year}"
     
     except Exception as e:
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
@@ -314,7 +316,7 @@ def process_data():
         try:
             excel_file = outlook.download_excel_attachment(
                 sender_email=os.environ.get('SENDER_EMAIL'),
-                subject_line=os.environ.get('SUBJECT_LINE_VES_BEVESTIGING')
+                subject_line=os.environ.get('SUBJECT_LINE_VES_BEVESTIING')
             )
             
             if excel_file:
@@ -334,33 +336,18 @@ def process_data():
     except Exception as e:
         print(f"Algemene fout: {str(e)}")
 
-# Start script
-if __name__ == "__main__":
-    print("\n=== ENVIRONMENT CHECK ===")
-    required_vars = [
-        'AZURE_CLIENT_ID',
-        'AZURE_CLIENT_SECRET', 
-        'AZURE_TENANT_ID',
-        'OUTLOOK_EMAIL', 
-        'OUTLOOK_PASSWORD',
-        'SENDER_EMAIL', 
-        'SUBJECT_LINE_VES_BEVESTIGING',
-        'WHATSAPP_TEMPLATE_ID_VES_BEVESTIGING',
-        'TRENGO_API_KEY'
-    ]
+# Scheduler configuration
+def main():
+    scheduler = BlockingScheduler(timezone=pytz.timezone('Europe/Amsterdam'))
     
-    missing_vars = [var for var in required_vars if not os.environ.get(var)]
-    if missing_vars:
-        print(f"ERROR: Missende environment variables: {', '.join(missing_vars)}")
-        sys.exit(1)
+    # Schedule process_data to run at 17:30 every weekday (Mon-Fri)
+    scheduler.add_job(process_data, CronTrigger(day_of_week='mon-fri', hour=17, minute=30))
     
-    print("Alle environment variables zijn ingesteld")
-    
-    print("\n=== EERSTE TEST ===")
-    print("Handmatige test uitvoeren...")
+    print("\nScheduler gestart, wacht op geplande taken...")
     try:
-        process_data()
-        print("Handmatige test compleet")
-    except Exception as e:
-        print(f"Fout tijdens handmatige test: {str(e)}")
-        sys.exit(1)  # Exit if initial
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        print("\nScheduler gestopt.")
+
+if __name__ == "__main__":
+    main()
