@@ -5,6 +5,8 @@ import pandas as pd
 from datetime import datetime
 import msal
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
+import pytz
 
 class OutlookClient:
     def __init__(self):
@@ -219,7 +221,7 @@ def process_excel_file(filepath):
         
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
-            'DP Nummer': 'fields.DP Nummer',
+            'DP Nummer': 'fields.DP Nummer', 
             'Mobielnummer': 'fields.Mobielnummer'
         }
         
@@ -268,7 +270,7 @@ def process_data():
         try:
             excel_file = outlook.download_excel_attachment(
                 sender_email=os.environ.get('SENDER_EMAIL'),
-                subject_line=os.environ.get('SUBJECT_LINE_PW_HERINNERING')
+                subject_line=os.environ.get('SUBJECT_LINE_VES_FB')
             )
             
             if excel_file:
@@ -288,33 +290,18 @@ def process_data():
     except Exception as e:
         print(f"Algemene fout: {str(e)}")
 
-# Start script
-if __name__ == "__main__":
-    print("\n=== ENVIRONMENT CHECK ===")
-    required_vars = [
-        'AZURE_CLIENT_ID',
-        'AZURE_CLIENT_SECRET', 
-        'AZURE_TENANT_ID',
-        'OUTLOOK_EMAIL', 
-        'OUTLOOK_PASSWORD',
-        'SENDER_EMAIL', 
-        'SUBJECT_LINE_VES_FB',
-        'WHATSAPP_TEMPLATE_ID_FB_VES',
-        'TRENGO_API_KEY'
-    ]
+# Scheduler configuration
+def main():
+    scheduler = BlockingScheduler(timezone=pytz.timezone('Europe/Amsterdam'))
     
-    missing_vars = [var for var in required_vars if not os.environ.get(var)]
-    if missing_vars:
-        print(f"ERROR: Missende environment variables: {', '.join(missing_vars)}")
-        sys.exit(1)
+    # Schedule process_data to run at 17:30 every weekday (Mon-Fri)
+    scheduler.add_job(process_data, CronTrigger(day_of_week='mon-fri', hour=17, minute=30))
     
-    print("Alle environment variables zijn ingesteld")
-    
-    print("\n=== EERSTE TEST ===")
-    print("Handmatige test uitvoeren...")
+    print("\nScheduler gestart, wacht op geplande taken...")
     try:
-        process_data()
-        print("Handmatige test compleet")
-    except Exception as e:
-        print(f"Fout tijdens handmatige test: {str(e)}")
-        sys.exit(1)  # Exit if initial test fails
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        print("\nScheduler gestopt.")
+
+if __name__ == "__main__":
+    main()
