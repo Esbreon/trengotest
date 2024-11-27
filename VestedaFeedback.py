@@ -4,7 +4,6 @@ import requests
 import pandas as pd
 from datetime import datetime
 import msal
-import pytz
 
 class OutlookClient:
     def __init__(self):
