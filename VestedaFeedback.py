@@ -4,8 +4,6 @@ import requests
 import pandas as pd
 from datetime import datetime
 import msal
-from apscheduler.schedulers.blocking import BlockingScheduler
-from apscheduler.triggers.cron import CronTrigger
 import pytz
 
 class OutlookClient:
@@ -257,7 +255,7 @@ def process_excel_file(filepath):
     except Exception as e:
         print(f"Fout bij verwerken Excel bestand: {str(e)}")
         raise
-        
+
 def process_data():
     """Main function to check email and process Excel."""
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
@@ -288,18 +286,5 @@ def process_data():
     except Exception as e:
         print(f"Algemene fout: {str(e)}")
 
-# Scheduler configuration
-def main():
-    scheduler = BlockingScheduler(timezone=pytz.timezone('Europe/Amsterdam'))
-    
-    # Schedule process_data to run at 17:30 every weekday (Mon-Fri)
-    scheduler.add_job(process_data, CronTrigger(day_of_week='mon-fri', hour=17, minute=30))
-    
-    print("\nScheduler gestart, wacht op geplande taken...")
-    try:
-        scheduler.start()
-    except (KeyboardInterrupt, SystemExit):
-        print("\nScheduler gestopt.")
-
 if __name__ == "__main__":
-    main()
+    process_data()
