@@ -24,21 +24,26 @@ def send_initial_template_message():
         "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}"
     }
     
-    response = requests.post(url, json=payload, headers=headers)
-    response.raise_for_status()
-    print(f"Trengo response: {response.text}")
-    return response.json().get('message', {}).get('ticket_id')
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        print(f"Trengo response: {response.text}")
+        return response.json().get('message', {}).get('ticket_id')
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending template message: {str(e)}")
+        return None
 
 def update_planning_url_field(ticket_id):
     """
-    Updates the custom field 'URL Zelfstandig plannen' on the ticket with value 'test'.
+    Updates the Locatie custom field (ID: 613776) on the ticket.
     This happens after we receive a positive response.
     """
     url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}"
     
+    # Using the correct custom field ID (613776) for 'Locatie'
     payload = {
         "custom_fields": {
-            "Locatie": "test"
+            "618842": "test"  # The ID must be used as a string key
         }
     }
     
@@ -48,9 +53,16 @@ def update_planning_url_field(ticket_id):
         "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}"
     }
     
-    response = requests.patch(url, json=payload, headers=headers)
-    response.raise_for_status()
-    print("Updated 'URL Zelfstandig plannen' field to 'test'")
+    try:
+        response = requests.patch(url, json=payload, headers=headers)
+        response.raise_for_status()
+        print("Successfully updated 'Locatie' field to 'test'")
+        return True
+    except requests.exceptions.RequestException as e:
+        print(f"Error updating custom field: {str(e)}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response content: {e.response.text}")
+        return False
 
 def get_latest_customer_message(ticket_id):
     """
@@ -63,12 +75,17 @@ def get_latest_customer_message(ticket_id):
         "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}"
     }
     
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    messages = response.json().get('data', [])
-    
-    customer_messages = [m for m in messages if m.get('from_contact')]
-    return customer_messages[-1] if customer_messages else None
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        messages = response.json().get('data', [])
+        
+        # Filter for customer messages and get the most recent one
+        customer_messages = [m for m in messages if m.get('from_contact')]
+        return customer_messages[-1] if customer_messages else None
+    except requests.exceptions.RequestException as e:
+        print(f"Error getting latest message: {str(e)}")
+        return None
 
 def monitor_ticket_response(ticket_id):
     """
@@ -77,13 +94,16 @@ def monitor_ticket_response(ticket_id):
     latest_message = get_latest_customer_message(ticket_id)
     
     if latest_message:
-        response_text = latest_message.get('body', '').strip()
+        response_text = latest_message.get('body', '').strip().lower()  # Convert to lowercase for better matching
         
-        if "Ja" in response_text:
+        if "ja" in response_text:  # Case-insensitive check
             print(f"Positive response received: '{response_text}'")
-            update_planning_url_field(ticket_id)
+            if update_planning_url_field(ticket_id):
+                print("Successfully processed positive response")
+            else:
+                print("Failed to update custom field after positive response")
             return True
-        elif "Nee" in response_text:
+        elif "nee" in response_text:
             print(f"Negative response received: '{response_text}'")
             return True
             
@@ -96,10 +116,20 @@ if __name__ == "__main__":
     
     if ticket_id:
         max_attempts = 30  # 5 minutes with 10-second intervals
+        success = False
+        
         for attempt in range(max_attempts):
-            if monitor_ticket_response(ticket_id):
+            try:
+                if monitor_ticket_response(ticket_id):
+                    success = True
+                    break
+                print(f"Waiting for response... (attempt {attempt + 1}/{max_attempts})")
+                time.sleep(10)
+            except Exception as e:
+                print(f"Error during monitoring: {str(e)}")
                 break
-            print(f"Waiting for response... (attempt {attempt + 1}/{max_attempts})")
-            time.sleep(10)
+        
+        if not success:
+            print("Monitoring period ended without receiving a definitive response")
     else:
         print("No ticket ID received, cannot monitor responses")
