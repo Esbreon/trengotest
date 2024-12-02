@@ -11,7 +11,7 @@ def send_initial_template_message():
     
     # Set up the template message for our test user
     payload = {
-        "recipient_phone_number": "+3153610195",
+        "recipient_phone_number": "+31653610195",
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": "Tris"}
