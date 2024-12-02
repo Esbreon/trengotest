@@ -48,10 +48,10 @@ def send_initial_template_message():
             custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
             
             # Payload for updating the custom field
-            # Using the specific custom field ID (613776) for 'Locatie'
+            # Using the specific custom field ID (618842) for 'Locatie'
             custom_field_payload = {
-                "custom_field_id": 613776,
-                "value": "test"
+                "custom_field_id": 618842,
+                "value": "https://www.fixzed.nl/"
             }
             
             # Send the request to update the custom field
