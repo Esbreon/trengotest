@@ -38,7 +38,7 @@ def update_planning_url_field(ticket_id):
     
     payload = {
         "custom_fields": {
-            "URL Zelfstandig plannen": "test"
+            "Locatie": "test"
         }
     }
     
