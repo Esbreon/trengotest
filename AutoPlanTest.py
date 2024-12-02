@@ -22,10 +22,11 @@ def create_encoded_custom_field(location="fixzed-a", email="", planregel=""):
     # Convert bytes back to string for API transmission
     return encoded_bytes.decode('utf-8')
 
-def send_initial_template_message():
+def send_initial_template_message(email, planregel):
     """
     Sends the initial WhatsApp template message and immediately updates the custom field.
-    This function handles both the template sending and field update in one sequential flow.
+    The template message only includes the name, while email and planregel are stored
+    in the encoded custom field.
     
     Args:
         email (str): User's email address
@@ -37,8 +38,7 @@ def send_initial_template_message():
     # API endpoint for creating new WhatsApp sessions
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
-    # Set up the template message payload with our test user information
-    # Now including email and planregel in the template parameters
+    # Set up the template message payload with only the name parameter
     template_payload = {
         "recipient_phone_number": "+31653610195",
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'),
@@ -69,7 +69,7 @@ def send_initial_template_message():
             # Step 2: Update the custom field
             custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
             
-            # Create the base64 encoded custom field value
+            # Create the base64 encoded custom field value using the provided email and planregel
             encoded_value = create_encoded_custom_field(
                 email=email,
                 planregel=planregel
