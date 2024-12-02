@@ -22,7 +22,7 @@ def create_encoded_custom_field(location="fixzed-a", email="", planregel=""):
     # Convert bytes back to string for API transmission
     return encoded_bytes.decode('utf-8')
 
-def send_initial_template_message(email, planregel):
+def send_initial_template_message():
     """
     Sends the initial WhatsApp template message and immediately updates the custom field.
     This function handles both the template sending and field update in one sequential flow.
@@ -43,9 +43,7 @@ def send_initial_template_message(email, planregel):
         "recipient_phone_number": "+31653610195",
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'),
         "params": [
-            {"type": "body", "key": "{{1}}", "value": "Tris"},
-            {"type": "body", "key": "{{2}}", "value": email},
-            {"type": "body", "key": "{{3}}", "value": planregel}
+            {"type": "body", "key": "{{1}}", "value": "Tris"}
         ]
     }
     
