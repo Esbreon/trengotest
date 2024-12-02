@@ -6,4 +6,4 @@ vesBevestiging: python VestedaBevestiging.py
 vesHerinnering: python VestedaHerinnering.py
 vesFoto: VestedaFotoVerzoek.py
 vesFeedback: VestedaFeedback.py
-UitstekendCounter: gunicorn Uitstekend:app
+APT: python AutoPlanTest.py
