@@ -6,7 +6,7 @@ def send_initial_template_message():
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
     payload = {
-        "recipient_phone_number": "+3153610195",
+        "recipient_phone_number": "+31653610195",
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": "Tris"}
@@ -22,7 +22,7 @@ def send_initial_template_message():
     response = requests.post(url, json=payload, headers=headers)
     response.raise_for_status()
     print(f"Trengo response: {response.text}")
-    return response.json().get('ticket_id')
+    return response.json().get('message', {}).get('ticket_id')
 
 def send_followup_message(ticket_id):
     url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/messages"
@@ -77,9 +77,12 @@ if __name__ == "__main__":
     ticket_id = send_initial_template_message()
     print(f"Monitoring ticket ID: {ticket_id}")
     
-    max_attempts = 30  # 5 minutes with 10-second intervals
-    for attempt in range(max_attempts):
-        if monitor_ticket_response(ticket_id):
-            break
-        print(f"Waiting for response... (attempt {attempt + 1}/{max_attempts})")
-        time.sleep(10)
+    if ticket_id:
+        max_attempts = 30  # 5 minutes with 10-second intervals
+        for attempt in range(max_attempts):
+            if monitor_ticket_response(ticket_id):
+                break
+            print(f"Waiting for response... (attempt {attempt + 1}/{max_attempts})")
+            time.sleep(10)
+    else:
+        print("No ticket ID received, cannot monitor responses")
