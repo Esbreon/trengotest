@@ -6,3 +6,4 @@ vesBevestiging: python VestedaBevestiging.py
 vesHerinnering: python VestedaHerinnering.py
 vesFoto: VestedaFotoVerzoek.py
 vesFeedback: VestedaFeedback.py
+UitstekendCounter: python Uitstekend.py
