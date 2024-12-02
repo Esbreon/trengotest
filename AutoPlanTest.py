@@ -37,10 +37,14 @@ def update_planning_url_field(ticket_id):
     """
     Updates the Locatie custom field (ID: 613776) on the ticket.
     This happens after we receive a positive response.
-    """
-    url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}"
     
-    # Using the correct custom field ID (613776) for 'Locatie'
+    The function uses Trengo's dedicated custom fields endpoint:
+    POST /api/v2/tickets/{ticket_id}/custom_fields
+    """
+    # Notice how we construct the URL - it's specifically for custom fields
+    url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
+    
+    # This is the exact payload structure Trengo expects
     payload = {
         "custom_field_id": 613776,
         "value": "test"
@@ -53,16 +57,19 @@ def update_planning_url_field(ticket_id):
     }
     
     try:
-        response = requests.patch(url, json=payload, headers=headers)
+        # Notice we're using POST instead of PATCH here
+        response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         print("Successfully updated 'Locatie' field to 'test'")
+        # Print response for debugging purposes
+        print(f"Update response: {response.text}")
         return True
     except requests.exceptions.RequestException as e:
         print(f"Error updating custom field: {str(e)}")
         if hasattr(e, 'response') and e.response is not None:
             print(f"Response content: {e.response.text}")
         return False
-
+        
 def get_latest_customer_message(ticket_id):
     """
     Retrieves the most recent message from the customer in this conversation.
@@ -89,13 +96,16 @@ def get_latest_customer_message(ticket_id):
 def monitor_ticket_response(ticket_id):
     """
     Checks for customer responses and updates the custom field if a positive response is received.
+    Includes detailed logging to help diagnose issues.
     """
+    print("\nChecking for new messages...")
     latest_message = get_latest_customer_message(ticket_id)
     
     if latest_message:
-        response_text = latest_message.get('body', '').strip().lower()  # Convert to lowercase for better matching
+        response_text = latest_message.get('body', '').strip().lower()
+        print(f"Found message: '{response_text}'")
         
-        if "ja" in response_text:  # Case-insensitive check
+        if "ja" in response_text:
             print(f"Positive response received: '{response_text}'")
             if update_planning_url_field(ticket_id):
                 print("Successfully processed positive response")
@@ -105,7 +115,12 @@ def monitor_ticket_response(ticket_id):
         elif "nee" in response_text:
             print(f"Negative response received: '{response_text}'")
             return True
+        else:
+            print(f"Message received but not a clear yes/no: '{response_text}'")
             
+    else:
+        print("No new messages found")
+    
     return False
 
 if __name__ == "__main__":
