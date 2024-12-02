@@ -11,7 +11,7 @@ def send_initial_template_message():
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
     # Fixed test data
-    phone_number = "+3153610195"
+    phone_number = "+31653610195"
     name = "Tris"
     
     # Template message with our fixed test name
