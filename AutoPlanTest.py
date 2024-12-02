@@ -43,7 +43,7 @@ def update_planning_url_field(ticket_id):
     # Using the correct custom field ID (613776) for 'Locatie'
     payload = {
         "custom_fields": {
-            "618842": "test"  # The ID must be used as a string key
+            "613776": "test"  # The ID must be used as a string key
         }
     }
     
