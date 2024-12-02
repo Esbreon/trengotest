@@ -18,7 +18,7 @@ def send_initial_template_message():
         "recipient_phone_number": "+31611341059",
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'),
         "params": [
-            {"type": "body", "key": "{{1}}", "value": "Tris"}
+            {"type": "body", "key": "{{1}}", "value": "Dirkteur"}
         ]
     }
     
