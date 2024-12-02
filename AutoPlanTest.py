@@ -5,7 +5,7 @@ import base64
 
 def create_encoded_custom_field(location="fixzed-a", email="", planregel=""):
     """
-    Creates a base64 encoded string from the custom field parameters.
+    Creates a base64 encoded string from the custom field parameters and combines it with the base URL.
     
     Args:
         location (str): Location identifier (default: "fixzed-a")
@@ -13,20 +13,25 @@ def create_encoded_custom_field(location="fixzed-a", email="", planregel=""):
         planregel (str): Plan rule identifier
     
     Returns:
-        str: Base64 encoded string of the combined parameters
+        str: Complete URL with base64 encoded parameters
     """
+    # Define the base URL for the custom field
+    base_url = "https://fixzed-a.plannen.app/token/"
+    
     # Combine the parameters with commas
     combined_string = f"{location},{email},{planregel}"
+    
     # Convert to bytes and encode to base64
     encoded_bytes = base64.b64encode(combined_string.encode('utf-8'))
-    # Convert bytes back to string for API transmission
-    return encoded_bytes.decode('utf-8')
+    
+    # Convert bytes back to string and combine with base URL
+    return base_url + encoded_bytes.decode('utf-8')
 
 def send_initial_template_message(email, planregel):
     """
     Sends the initial WhatsApp template message and immediately updates the custom field.
     The template message only includes the name, while email and planregel are stored
-    in the encoded custom field.
+    in the encoded custom field URL.
     
     Args:
         email (str): User's email address
@@ -69,16 +74,16 @@ def send_initial_template_message(email, planregel):
             # Step 2: Update the custom field
             custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
             
-            # Create the base64 encoded custom field value using the provided email and planregel
-            encoded_value = create_encoded_custom_field(
+            # Create the complete URL with encoded parameters
+            complete_url = create_encoded_custom_field(
                 email=email,
                 planregel=planregel
             )
             
-            # Payload for updating the custom field with encoded value
+            # Payload for updating the custom field with the complete URL
             custom_field_payload = {
                 "custom_field_id": 618842,
-                "value": encoded_value
+                "value": complete_url
             }
             
             # Send the request to update the custom field
