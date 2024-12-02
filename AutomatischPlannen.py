@@ -278,7 +278,7 @@ def process_data():
         try:
             excel_file = outlook.download_excel_attachment(
                 sender_email=os.environ.get('SENDER_EMAIL'),
-                subject_line=os.environ.get('SUBJECT_LINE')
+                subject_line=os.environ.get('SUBJECT_LINE_AUTO_PLAN')
             )
             
             if excel_file:
