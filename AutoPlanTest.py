@@ -4,13 +4,17 @@ import time
 
 def send_initial_template_message():
     """
-    Sends the initial WhatsApp template message to our test number.
-    Returns the ticket ID which we'll use to track the conversation.
+    Sends the initial WhatsApp template message and immediately updates the custom field.
+    This function handles both the template sending and field update in one sequential flow.
+    
+    Returns:
+        str or None: The ticket ID if successful, None if any step fails
     """
+    # API endpoint for creating new WhatsApp sessions
     url = "https://app.trengo.com/api/v2/wa_sessions"
     
-    # Set up the template message for our test user
-    payload = {
+    # Set up the template message payload with our test user information
+    template_payload = {
         "recipient_phone_number": "+31653610195",
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'),
         "params": [
@@ -18,6 +22,8 @@ def send_initial_template_message():
         ]
     }
     
+    # Headers required for all Trengo API requests
+    # We use the same headers for both operations to maintain consistency
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
@@ -25,125 +31,74 @@ def send_initial_template_message():
     }
     
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()
-        print(f"Trengo response: {response.text}")
-        return response.json().get('message', {}).get('ticket_id')
+        # Step 1: Send the template message
+        template_response = requests.post(url, json=template_payload, headers=headers)
+        template_response.raise_for_status()  # This will raise an exception for error status codes
+        print("Template message sent successfully")
+        
+        # Extract the ticket ID from the response
+        # We need this ID to update the custom field
+        ticket_id = template_response.json().get('message', {}).get('ticket_id')
+        
+        if ticket_id:
+            print(f"Ticket ID received: {ticket_id}")
+            
+            # Step 2: Update the custom field
+            # We construct the URL for the custom fields endpoint using the ticket ID
+            custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
+            
+            # Payload for updating the custom field
+            # Using the specific custom field ID (613776) for 'Locatie'
+            custom_field_payload = {
+                "custom_field_id": 613776,
+                "value": "test"
+            }
+            
+            # Send the request to update the custom field
+            field_response = requests.post(
+                custom_field_url, 
+                json=custom_field_payload, 
+                headers=headers
+            )
+            field_response.raise_for_status()
+            print("Custom field updated successfully")
+            
+            return ticket_id
+        else:
+            print("No ticket ID received in template response")
+            return None
+            
     except requests.exceptions.RequestException as e:
-        print(f"Error sending template message: {str(e)}")
-        return None
-
-def update_planning_url_field(ticket_id):
-    """
-    Updates the Locatie custom field (ID: 613776) on the ticket.
-    This happens after we receive a positive response.
-    
-    The function uses Trengo's dedicated custom fields endpoint:
-    POST /api/v2/tickets/{ticket_id}/custom_fields
-    """
-    # Notice how we construct the URL - it's specifically for custom fields
-    url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
-    
-    # This is the exact payload structure Trengo expects
-    payload = {
-        "custom_field_id": 613776,
-        "value": "test"
-    }
-    
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}"
-    }
-    
-    try:
-        # Notice we're using POST instead of PATCH here
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()
-        print("Successfully updated 'Locatie' field to 'test'")
-        # Print response for debugging purposes
-        print(f"Update response: {response.text}")
-        return True
-    except requests.exceptions.RequestException as e:
-        print(f"Error updating custom field: {str(e)}")
+        # Comprehensive error handling to catch any API-related issues
+        print(f"Error occurred: {str(e)}")
+        # If we have a response object, print its content for debugging
         if hasattr(e, 'response') and e.response is not None:
             print(f"Response content: {e.response.text}")
-        return False
-        
-def get_latest_customer_message(ticket_id):
-    """
-    Retrieves the most recent message from the customer in this conversation.
-    """
-    url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/messages"
-    
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}"
-    }
-    
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        messages = response.json().get('data', [])
-        
-        # Filter for customer messages and get the most recent one
-        customer_messages = [m for m in messages if m.get('from_contact')]
-        return customer_messages[-1] if customer_messages else None
-    except requests.exceptions.RequestException as e:
-        print(f"Error getting latest message: {str(e)}")
         return None
 
-def monitor_ticket_response(ticket_id):
+def main():
     """
-    Checks for customer responses and updates the custom field if a positive response is received.
-    Includes detailed logging to help diagnose issues.
+    Main function to orchestrate the process of sending the template
+    and updating the custom field.
     """
-    print("\nChecking for new messages...")
-    latest_message = get_latest_customer_message(ticket_id)
+    print("Starting WhatsApp template message process...")
     
-    if latest_message:
-        response_text = latest_message.get('body', '').strip().lower()
-        print(f"Found message: '{response_text}'")
-        
-        if "ja" in response_text:
-            print(f"Positive response received: '{response_text}'")
-            if update_planning_url_field(ticket_id):
-                print("Successfully processed positive response")
-            else:
-                print("Failed to update custom field after positive response")
-            return True
-        elif "nee" in response_text:
-            print(f"Negative response received: '{response_text}'")
-            return True
-        else:
-            print(f"Message received but not a clear yes/no: '{response_text}'")
-            
-    else:
-        print("No new messages found")
+    # Verify that required environment variables are set
+    if not os.environ.get('TRENGO_API_KEY'):
+        print("Error: TRENGO_API_KEY environment variable is not set")
+        return
     
-    return False
-
-if __name__ == "__main__":
-    # Send the initial template message and get started
+    if not os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'):
+        print("Error: WHATSAPP_TEMPLATE_ID_PLAN environment variable is not set")
+        return
+    
+    # Send the template and update the custom field
     ticket_id = send_initial_template_message()
-    print(f"Monitoring ticket ID: {ticket_id}")
     
     if ticket_id:
-        max_attempts = 30  # 5 minutes with 10-second intervals
-        success = False
-        
-        for attempt in range(max_attempts):
-            try:
-                if monitor_ticket_response(ticket_id):
-                    success = True
-                    break
-                print(f"Waiting for response... (attempt {attempt + 1}/{max_attempts})")
-                time.sleep(10)
-            except Exception as e:
-                print(f"Error during monitoring: {str(e)}")
-                break
-        
-        if not success:
-            print("Monitoring period ended without receiving a definitive response")
+        print(f"Process completed successfully. Ticket ID: {ticket_id}")
     else:
-        print("No ticket ID received, cannot monitor responses")
+        print("Process failed to complete successfully")
+
+if __name__ == "__main__":
+    main()
