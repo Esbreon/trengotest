@@ -250,7 +250,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
     
     try:
         print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam}...")
-        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, DP Nummer={dp_nummer}")
+        print(f"Bericht details: Datum={formatted_date}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, Tijdvak={tijdvak}, DP Nummer={dp_nummer}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         print(f"Trengo response: {response.text}")
@@ -284,8 +284,8 @@ def process_excel_file(filepath):
             'Mobielnummer': 'fields.Mobielnummer',
             'Monteur': 'fields.Monteur',
             'Dagnaam': 'fields.Dagnaam',
-            'Tijdvak': 'fields.Tijdvak',
-            'DP Nummer': 'fields.DP Nummer'
+            'DP Nummer': 'fields.DP Nummer',
+            'Tijdvak': 'fields.Tijdvak'
         }
         
         # Verify all required columns exist
