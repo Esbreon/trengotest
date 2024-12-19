@@ -193,7 +193,7 @@ def format_phone_number(phone):
         phone = phone.split('.')[0]
     return phone
 
-def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer):
+def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam_bewoner}")
@@ -208,10 +208,11 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, dp_nummer
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PW_BEVESTIGING'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
-            {"type": "body", "key": "{{2}}", "value": formatted_date},
-            {"type": "body", "key": "{{3}}", "value": str(tijdvak)},
-            {"type": "body", "key": "{{4}}", "value": str(reparatieduur)},
-            {"type": "body", "key": "{{5}}", "value": str(dp_nummer)}
+            {"type": "body", "key": "{{2}}", "value": str(dag)},
+            {"type": "body", "key": "{{3}}", "value": formatted_date},
+            {"type": "body", "key": "{{4}}", "value": str(tijdvak)},
+            {"type": "body", "key": "{{5}}", "value": str(reparatieduur)},
+            {"type": "body", "key": "{{6}}", "value": str(dp_nummer)}
         ]
     }
     
@@ -223,7 +224,7 @@ def send_whatsapp_message(naam_bewoner, datum, tijdvak, reparatieduur, dp_nummer
     
     try:
         print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam_bewoner}...")
-        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}, DP Nummer={dp_nummer}")
+        print(f"Bericht details: Datum={formatted_date}, Dag={dag}, Tijdvak={tijdvak}, Reparatieduur={reparatieduur}, DP Nummer={dp_nummer}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         print(f"Trengo response: {response.text}")
@@ -252,6 +253,7 @@ def process_excel_file(filepath):
         
         column_mapping = {
             'Naam bewoner': 'fields.Naam bewoner',
+            'Dag': 'fields.Dag',
             'Datum bezoek': 'fields.Datum bezoek',
             'Tijdvak': 'fields.Tijdvak',
             'Reparatieduur': 'fields.Reparatieduur',
