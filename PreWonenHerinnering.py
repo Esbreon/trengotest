@@ -284,8 +284,8 @@ def process_excel_file(filepath):
             'Mobielnummer': 'fields.Mobielnummer',
             'Monteur': 'fields.Monteur',
             'Dagnaam': 'fields.Dagnaam',
-            'Tijdvak': 'fields.Tijdvak',
-            'DP Nummer': 'fields.DP Nummer'
+            'DP Nummer': 'fields.DP Nummer',
+            'Tijdvak': 'fields.Tijdvak'
         }
         
         # Verify all required columns exist
