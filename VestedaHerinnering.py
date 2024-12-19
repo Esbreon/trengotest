@@ -217,7 +217,7 @@ def format_time(time_str):
         print(f"Fout bij formatteren tijd {time_str}: {str(e)}")
         return str(time_str)
 
-def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, reparatieduur, dp_nummer, mobielnummer):
+def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer):
     """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam}")
@@ -226,8 +226,6 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     url = "https://app.trengo.com/api/v2/wa_sessions"
     formatted_phone = format_phone_number(mobielnummer)
     formatted_date = format_date(datum)
-    formatted_begintijd = format_time(begintijd)
-    formatted_eindtijd = format_time(eindtijd)
     
     payload = {
         "recipient_phone_number": formatted_phone,
@@ -238,8 +236,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
             {"type": "body", "key": "{{3}}", "value": str(dagnaam)},
             {"type": "body", "key": "{{4}}", "value": formatted_date},
             {"type": "body", "key": "{{5}}", "value": str(monteur)},
-            {"type": "body", "key": "{{6}}", "value": formatted_begintijd},
-            {"type": "body", "key": "{{7}}", "value": formatted_eindtijd},
+            {"type": "body", "key": "{{6}}", "value": str(tijdvak)},
             {"type": "body", "key": "{{8}}", "value": str(reparatieduur)},
             {"type": "body", "key": "{{9}}", "value": str(dp_nummer)}
         ]
@@ -253,7 +250,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, begintijd, eindtijd, re
     
     try:
         print(f"Versturen WhatsApp bericht naar {formatted_phone} voor {naam}...")
-        print(f"Bericht details: Datum={formatted_date}, Begintijd={formatted_begintijd}, Eindtijd={formatted_eindtijd}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, DP Nummer={dp_nummer}")
+        print(f"Bericht details: Datum={formatted_date}, Tijdvak={tijdvak}, Dag={dagnaam}, Reparatieduur={reparatieduur}, Monteur={monteur}, DP Nummer={dp_nummer}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         print(f"Trengo response: {response.text}")
@@ -287,8 +284,7 @@ def process_excel_file(filepath):
             'Mobielnummer': 'fields.Mobielnummer',
             'Monteur': 'fields.Monteur',
             'Dagnaam': 'fields.Dagnaam',
-            'Begintijd': 'fields.Begintijd',
-            'Eindtijd': 'fields.Eindtijd',
+            'Tijdvak': 'fields.Tijdvak',
             'DP Nummer': 'fields.DP Nummer'
         }
         
@@ -323,8 +319,7 @@ def process_excel_file(filepath):
                     monteur=row['fields.Monteur'],
                     dagnaam=row['fields.Dagnaam'],
                     datum=row['fields.Datum bezoek'],
-                    begintijd=row['fields.Begintijd'],
-                    eindtijd=row['fields.Eindtijd'],
+                    tijdvak=row['fields.tijdvak'],
                     reparatieduur=row['fields.Reparatieduur'],
                     dp_nummer=row['fields.DP Nummer'],
                     mobielnummer=mobielnummer
