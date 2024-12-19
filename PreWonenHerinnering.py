@@ -237,8 +237,8 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
             {"type": "body", "key": "{{4}}", "value": formatted_date},
             {"type": "body", "key": "{{5}}", "value": str(monteur)},
             {"type": "body", "key": "{{6}}", "value": str(tijdvak)},
-            {"type": "body", "key": "{{8}}", "value": str(reparatieduur)},
-            {"type": "body", "key": "{{9}}", "value": str(dp_nummer)}
+            {"type": "body", "key": "{{7}}", "value": str(reparatieduur)},
+            {"type": "body", "key": "{{8}}", "value": str(dp_nummer)}
         ]
     }
     
