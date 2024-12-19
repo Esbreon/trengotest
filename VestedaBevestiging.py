@@ -286,6 +286,7 @@ def process_excel_file(filepath):
                 send_whatsapp_message(
                     naam_bewoner=row['fields.Naam bewoner'],
                     datum=row['fields.Datum bezoek'],
+                    dag=row['fields.Dag'],
                     tijdvak=row['fields.Tijdvak'],
                     reparatieduur=row['fields.Reparatieduur'],
                     mobielnummer=mobielnummer,
