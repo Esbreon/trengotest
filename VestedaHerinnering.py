@@ -319,7 +319,7 @@ def process_excel_file(filepath):
                     monteur=row['fields.Monteur'],
                     dagnaam=row['fields.Dagnaam'],
                     datum=row['fields.Datum bezoek'],
-                    tijdvak=row['fields.tijdvak'],
+                    tijdvak=row['fields.Tijdvak'],
                     reparatieduur=row['fields.Reparatieduur'],
                     dp_nummer=row['fields.DP Nummer'],
                     mobielnummer=mobielnummer
