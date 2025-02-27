@@ -34,8 +34,9 @@ def format_phone_number(phone):
     phone = str(phone).strip()
     return phone if phone.startswith('+') else f'+{phone}'
 
-def send_whatsapp_message(name, phone_number, test_mode=True):
-    """Simulates sending WhatsApp message via Trengo (test mode enabled)."""
+def send_whatsapp_message(name, phone_number):
+    """Simulates sending WhatsApp message via Trengo (always in test mode)."""
+    test_mode = True  
     formatted_phone = format_phone_number(phone_number)
     if not formatted_phone:
         print(f"Invalid phone number for {name}")
@@ -48,11 +49,12 @@ def send_whatsapp_message(name, phone_number, test_mode=True):
             {"type": "body", "key": "{{1}}", "value": str(name)}
         ]
     }
-    
+
     if test_mode:
         print(f"[TEST MODE] WhatsApp message **would** be sent to {formatted_phone} for {name}.")
         print(f"[TEST MODE] Payload: {payload}")
     else:
+        print("Foutje")
         #url = "https://app.trengo.com/api/v2/wa_sessions"
         #headers = {
         #    "accept": "application/json",
