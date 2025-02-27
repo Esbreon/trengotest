@@ -2,3 +2,4 @@ unixodbc
 unixodbc-dev
 odbcinst
 odbcinst1debian2
+libodbc1
