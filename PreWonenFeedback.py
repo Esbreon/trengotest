@@ -1,11 +1,14 @@
 import os
 import pyodbc
 import pandas as pd
+from flask import Flask, jsonify
+
+app = Flask(__name__)
 
 def get_sql_connection():
     """Establish connection to SQL Server using FreeTDS."""
     conn = pyodbc.connect(
-        DRIVER='{SQL Server}',
+        DRIVER='{ODBC Driver 17 for SQL Server}',  # Use FreeTDS-compatible driver
         SERVER=os.getenv('SQL_SERVER'),
         DATABASE=os.getenv('SQL_DATABASE'),
         UID=os.getenv('SQL_USER'),
@@ -28,37 +31,23 @@ def format_phone_number(phone):
     phone = str(phone).strip()
     return phone if phone.startswith('+') else f'+{phone}'
 
-def print_whatsapp_message(name, phone_number):
-    """Prints the WhatsApp message instead of sending it."""
-    formatted_phone = format_phone_number(phone_number)
-    if not formatted_phone:
-        print(f"Invalid phone number for {name}")
-        return
-    
-    print(f"[TEST] Would send WhatsApp message to {formatted_phone} for {name}")
-
+@app.route('/process_feedback_requests', methods=['GET'])
 def process_feedback_requests():
-    """Fetch eligible tasks and print WhatsApp messages."""
-    print("Fetching feedback requests from SQL view...")
+    """Fetch eligible tasks and return WhatsApp messages as JSON."""
     df = fetch_data_from_sql()
-    
+
     if df.empty:
-        print("No eligible feedback requests found.")
-        return
+        return jsonify({"message": "No eligible feedback requests found."})
+
+    result = []
+    for _, row in df.iterrows():
+        formatted_phone = format_phone_number(row.get('phone_number'))
+        if not formatted_phone:
+            result.append({"name": row.get('name', 'Resident'), "status": "Invalid phone number"})
+        else:
+            result.append({"name": row.get('name', 'Resident'), "phone_number": formatted_phone, "status": "Ready to send"})
     
-    print(f"Found {len(df)} tasks eligible for feedback requests.")
-    for index, row in df.iterrows():
-        try:
-            print_whatsapp_message(
-                name=row.get('name', 'Resident'),
-                phone_number=row.get('phone_number')
-            )
-        except Exception as e:
-            print(f"Error processing task {index}: {str(e)}")
+    return jsonify(result)
 
-def main():
-    """Main execution function."""
-    process_feedback_requests()
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
