@@ -8,13 +8,14 @@ app = Flask(__name__)
 def get_sql_connection():
     """Establish connection to SQL Server using FreeTDS."""
     conn = pyodbc.connect(
-        DRIVER='{ODBC Driver 17 for SQL Server}',  # Use FreeTDS-compatible driver
+        DRIVER='{FreeTDS}',
         SERVER=os.getenv('SQL_SERVER'),
         DATABASE=os.getenv('SQL_DATABASE'),
         UID=os.getenv('SQL_USER'),
-        PWD=os.getenv('SQL_PASSWORD')
+        PWD=os.getenv('SQL_PASSWORD'),
+        PORT=1433,
+        TDS_Version='7.4'
     )
-    return conn
 
 def fetch_data_from_sql():
     """Fetch data from the SQL view."""
