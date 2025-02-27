@@ -109,6 +109,15 @@ class OutlookClient:
                                 import base64
                                 with open(filepath, 'wb') as f:
                                     f.write(base64.b64decode(content))
+                                    
+                                update_url = f'https://graph.microsoft.com/v1.0/me/messages/{message_id}'
+                                update_response = requests.patch(
+                                    update_url,
+                                    headers=headers,
+                                    json={'isRead': True}
+                                )
+                                update_response.raise_for_status()
+                                print("Email gemarkeerd als gelezen")
                                 
                                 return filepath
                 
