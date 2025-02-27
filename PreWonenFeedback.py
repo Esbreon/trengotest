@@ -3,9 +3,9 @@ import pyodbc
 import pandas as pd
 
 def get_sql_connection():
-    """Establish connection to SQL Server."""
+    """Establish connection to SQL Server using FreeTDS."""
     conn = pyodbc.connect(
-        DRIVER=os.getenv('SQL_DRIVER', '{ODBC Driver 17 for SQL Server}'),
+        DRIVER='{FreeTDS}',
         SERVER=os.getenv('SQL_SERVER'),
         DATABASE=os.getenv('SQL_DATABASE'),
         UID=os.getenv('SQL_USER'),
