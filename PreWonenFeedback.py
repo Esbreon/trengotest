@@ -1,6 +1,7 @@
 import os
 import pyodbc
 import pandas as pd
+import requests  
 from flask import Flask, jsonify
 
 app = Flask(__name__)
@@ -16,6 +17,7 @@ def get_sql_connection():
         PORT=1433,
         TDS_Version='7.4'
     )
+    return conn 
 
 def fetch_data_from_sql():
     """Fetch data from the SQL view."""
@@ -32,23 +34,64 @@ def format_phone_number(phone):
     phone = str(phone).strip()
     return phone if phone.startswith('+') else f'+{phone}'
 
-@app.route('/process_feedback_requests', methods=['GET'])
-def process_feedback_requests():
-    """Fetch eligible tasks and return WhatsApp messages as JSON."""
-    df = fetch_data_from_sql()
+def send_whatsapp_message(name, phone_number, test_mode=True):
+    """Simulates sending WhatsApp message via Trengo (test mode enabled)."""
+    formatted_phone = format_phone_number(phone_number)
+    if not formatted_phone:
+        print(f"Invalid phone number for {name}")
+        return
 
-    if df.empty:
-        return jsonify({"message": "No eligible feedback requests found."})
-
-    result = []
-    for _, row in df.iterrows():
-        formatted_phone = format_phone_number(row.get('phone_number'))
-        if not formatted_phone:
-            result.append({"name": row.get('name', 'Resident'), "status": "Invalid phone number"})
-        else:
-            result.append({"name": row.get('name', 'Resident'), "phone_number": formatted_phone, "status": "Ready to send"})
+    payload = {
+        "recipient_phone_number": formatted_phone,
+        "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_FB_PW'),
+        "params": [
+            {"type": "body", "key": "{{1}}", "value": str(name)}
+        ]
+    }
     
-    return jsonify(result)
+    if test_mode:
+        print(f"[TEST MODE] WhatsApp message **would** be sent to {formatted_phone} for {name}.")
+        print(f"[TEST MODE] Payload: {payload}")
+    else:
+        #url = "https://app.trengo.com/api/v2/wa_sessions"
+        #headers = {
+        #    "accept": "application/json",
+        #    "content-type": "application/json",
+        #    "Authorization": "Bearer " + os.environ.get('TRENGO_API_KEY')
+        #}
+        #try:
+        #    response = requests.post(url, json=payload, headers=headers)
+        #    response.raise_for_status()
+        #    print(f"WhatsApp message sent to {formatted_phone} for {name}")
+        #except requests.exceptions.HTTPError as e:
+        #    print(f"Error sending message: {str(e)}")
+        #    if e.response is not None:
+        #        print(f"Response body: {e.response.text}")
+        #    raise
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+def process_feedback_requests(test_mode=True):
+    """Fetch eligible tasks and print WhatsApp messages in test mode."""
+    print("Fetching feedback requests from SQL view...")
+    df = fetch_data_from_sql()
+    
+    if df.empty:
+        print("No eligible feedback requests found.")
+        return
+    
+    print(f"Found {len(df)} tasks eligible for feedback requests.")
+    for index, row in df.iterrows():
+        try:
+            send_whatsapp_message(
+                name=row.get('name', 'Resident'),
+                phone_number=row.get('phone_number'),
+                test_mode=test_mode
+            )
+        except Exception as e:
+            print(f"Error processing task {index}: {str(e)}")
+
+def main():
+    """Main execution function."""
+    process_feedback_requests(test_mode=True) 
+
+if __name__ == "__main__":
+    main()
