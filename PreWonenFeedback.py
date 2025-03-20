@@ -133,46 +133,10 @@ class OutlookClient:
             if e.response is not None:
                 print(f"Response body: {e.response.text}")
             raise
-            
 
-def update_custom_field(ticket_id, task_id):
-    """
-    Updates the custom field in a Trengo ticket with the Taskid.
 
-    Args:
-        ticket_id (str): The ID of the Trengo ticket.
-        task_id (str): The Task ID from the Excel file.
-
-    Returns:
-        bool: True if successful, False otherwise.
-    """
-    custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
-
-    payload = {
-        "custom_field_id": 618194,  
-        "value": task_id
-    }
-
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "Authorization": "Bearer " + os.environ.get('TRENGO_API_KEY')
-    }
-
-    try:
-        response = requests.post(custom_field_url, json=payload, headers=headers)
-        response.raise_for_status()
-        print(f"Custom field updated successfully with Taskid: {task_id}")
-        return True
-    except requests.exceptions.RequestException as e:
-        print(f"Error updating custom field: {str(e)}")
-        if hasattr(e, 'response') and e.response is not None:
-            print(f"Response content: {e.response.text}")
-        return False
-        
-
-def send_whatsapp_message(naam, mobielnummer, task_id):
-    """Sends WhatsApp message via Trengo with the template and updates the custom field with Taskid."""
+def send_whatsapp_message(naam, mobielnummer):
+    """Sends WhatsApp message via Trengo with the template."""
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam}")
         return
@@ -195,16 +159,8 @@ def send_whatsapp_message(naam, mobielnummer, task_id):
         print(f"Versturen WhatsApp bericht naar {mobielnummer} voor {naam}...")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
-        
-        response_data = response.json()
         print(f"Trengo response: {response.text}")
-
-        # Extract ticket ID and update the custom field with Taskid
-        ticket_id = response_data.get("message", {}).get("ticket_id")
-        if ticket_id:
-            update_custom_field(ticket_id, task_id)
-
-        return response_data
+        return response.json()
     except requests.exceptions.RequestException as e:
         print(f"Fout bij versturen bericht: {str(e)}")
         raise
@@ -218,14 +174,10 @@ def process_excel_file(filepath):
             print("Geen data gevonden in Excel bestand")
             return
         
-        df = df.rename(columns={'Naam bewoner': 'naam', 'Mobielnummer': 'mobielnummer', 'Taskid': 'task_id'})
-
+        df = df.rename(columns={'Naam bewoner': 'naam', 'Mobielnummer': 'mobielnummer'})
+        
         for _, row in df.iterrows():
-            naam = row.get('naam', '')
-            mobielnummer = row.get('mobielnummer', '')
-            task_id = row.get('task_id', '')
-
-            send_whatsapp_message(naam, mobielnummer, task_id)
+            send_whatsapp_message(row['naam'], row['mobielnummer'])
             
     except Exception as e:
         print(f"Fout bij verwerken Excel bestand: {str(e)}")
