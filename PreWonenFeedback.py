@@ -212,7 +212,7 @@ def send_whatsapp_message(naam, mobielnummer, task_id):
 
 def process_excel_file(filepath):
     try:
-        df = pd.read_excel(filepath)
+        df = pd.read_excel(filepath, dtype={"Taskid": str})
         
         if df.empty:
             print("Geen data gevonden in Excel bestand")
