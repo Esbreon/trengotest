@@ -7,4 +7,4 @@ vesHerinnering: python VestedaHerinnering.py
 vesFoto: VestedaFotoVerzoek.py
 vesFeedback: VestedaFeedback.py
 APT: python AutoPlanTest.py
-test: test.py
+test: python test.py
