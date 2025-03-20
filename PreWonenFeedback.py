@@ -150,7 +150,7 @@ def update_custom_field(ticket_id, task_id):
 
     payload = {
         "custom_field_id": 618194,  
-        "value": task_id
+        "value": str(task_id)
     }
 
     headers = {
@@ -202,7 +202,7 @@ def send_whatsapp_message(naam, mobielnummer, task_id):
         # Extract ticket ID and update the custom field with Taskid
         ticket_id = response_data.get("message", {}).get("ticket_id")
         if ticket_id:
-            update_custom_field(ticket_id, task_id)
+            update_custom_field(ticket_id, str(task_id))
 
         return response_data
     except requests.exceptions.RequestException as e:
