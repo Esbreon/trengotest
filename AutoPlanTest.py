@@ -3,7 +3,7 @@ import requests
 import time
 import base64
 
-def create_encoded_custom_field(location="fixzed-a", email="", planregel=""):
+def create_encoded_custom_field(location="fixzed", email="", planregel=""):
     """
     Creates a base64 encoded string from the custom field parameters and combines it with the base URL.
     
@@ -112,23 +112,27 @@ def main():
     and updating the custom field.
     """
     print("Starting WhatsApp template message process...")
-    
+
     # Verify that required environment variables are set
-    if not os.environ.get('TRENGO_API_KEY'):
-        print("Error: TRENGO_API_KEY environment variable is not set")
+    required_env_vars = [
+        'TRENGO_API_KEY',
+        'WHATSAPP_TEMPLATE_ID_PLAN',
+        'TEST_EMAIL',
+        'TEST_PLANREGEL'
+    ]
+
+    missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
+    if missing_vars:
+        print(f"Error: Missing environment variables: {', '.join(missing_vars)}")
         return
-    
-    if not os.environ.get('WHATSAPP_TEMPLATE_ID_PLAN'):
-        print("Error: WHATSAPP_TEMPLATE_ID_PLAN environment variable is not set")
-        return
-    
-    # Example usage with the provided email and planregel
-    email = "tristan@boostix.nl"
-    planregel = "1111"
-    
+
+    # Fetch email and planregel from environment
+    email = os.environ['TEST_EMAIL']
+    planregel = os.environ['TEST_PLANREGEL']
+
     # Send the template and update the custom field
     ticket_id = send_initial_template_message(email, planregel)
-    
+
     if ticket_id:
         print(f"Process completed successfully. Ticket ID: {ticket_id}")
     else:
