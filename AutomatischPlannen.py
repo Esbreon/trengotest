@@ -6,7 +6,10 @@ from datetime import datetime
 import msal
 import base64
 
-# Reusing the OutlookClient class from the original script
+# Configuration
+CUSTOM_FIELD_ID = 618842  # Static Custom Field ID for Trengo
+
+# Outlook Client for Microsoft Graph API
 class OutlookClient:
     def __init__(self):
         self.client_id = os.getenv('AZURE_CLIENT_ID')
@@ -138,6 +141,7 @@ class OutlookClient:
             print(f"Unexpected error: {str(e)}")
             raise
 
+# WhatsApp Messaging Logic
 def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
     email = os.environ.get('TRUSTED_EMAIL')
 
@@ -179,7 +183,7 @@ def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
 
         custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
         custom_field_payload = {
-            "custom_field_id": int(os.environ.get('CUSTOM_FIELD_ID')),
+            "custom_field_id": CUSTOM_FIELD_ID,
             "value": custom_field_encoded
         }
 
@@ -201,6 +205,7 @@ def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
         print(f"Error sending message: {str(e)}")
         raise
 
+# Excel File Processing
 def process_excel_file(filepath):
     try:
         print(f"\nProcessing Excel file: {filepath}")
@@ -246,7 +251,8 @@ def process_excel_file(filepath):
     except Exception as e:
         print(f"Error processing Excel file: {str(e)}")
         raise
-
+        
+# Main Execution
 def process_data():
     print(f"\n=== Starting new processing: {datetime.now()} ===")
 
@@ -287,7 +293,6 @@ if __name__ == "__main__":
         'SUBJECT_LINE_AUTO_PLAN',
         'TRENGO_API_KEY',
         'WHATSAPP_TEMPLATE_ID_PLAN',
-        'CUSTOM_FIELD_ID',
         'TRUSTED_EMAIL'
     ]
 
