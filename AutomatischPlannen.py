@@ -7,7 +7,14 @@ import msal
 import base64
 
 # Configuration
-CUSTOM_FIELD_ID = 618842  # Static Custom Field ID for Trengo
+CUSTOM_FIELDS = {
+    "plan_url": 618842,        # Original field
+    "locatie": 613776,
+    "element": 618192,
+    "defect": 618193,
+    "werkbonnummer": 618194
+}
+
 BASE_URL = "https://fixzed-a.plannen.app/token/"
 
 # Outlook Client for Microsoft Graph API
@@ -143,7 +150,7 @@ class OutlookClient:
             raise
 
 # WhatsApp Messaging Logic
-def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
+def send_whatsapp_message(naam_bewoner, planregel, mobielnummer, locatie, element, defect, werkbonnummer):
     email = os.environ.get('TRUSTED_EMAIL')
 
     if not mobielnummer:
@@ -183,20 +190,25 @@ def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
         encoded = base64.b64encode(combined_string.encode('utf-8')).decode('utf-8')
         complete_url = BASE_URL + encoded
 
-        custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
-        custom_field_payload = {
-            "custom_field_id": CUSTOM_FIELD_ID,
-            "value": complete_url
-        }
+        field_payloads = [
+            (CUSTOM_FIELDS['plan_url'], complete_url),
+            (CUSTOM_FIELDS['locatie'], locatie),
+            (CUSTOM_FIELDS['element'], element),
+            (CUSTOM_FIELDS['defect'], defect),
+            (CUSTOM_FIELDS['werkbonnummer'], werkbonnummer)
+        ]
 
-        print(f"Updating custom field for ticket {ticket_id}...")
-        field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
-        field_response.raise_for_status()
-        print("Custom field updated successfully")
+        for field_id, value in field_payloads:
+            custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
+            custom_field_payload = {
+                "custom_field_id": field_id,
+                "value": value
+            }
+            print(f"Updating custom field {field_id}...")
+            field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
+            field_response.raise_for_status()
 
         print(f"Process completed for {naam_bewoner}")
-        print(f"Details: Ticket ID={ticket_id}, Email={email}, Planregel={planregel}")
-
         return ticket_id
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error sending message: {str(e)}")
@@ -220,7 +232,7 @@ def process_excel_file(filepath):
         print(f"Number of rows found: {len(df)}")
         print(f"Columns in file: {', '.join(df.columns)}")
 
-        required_columns = ['Naam bewoner', 'Planregel', 'Mobielnummer']
+        required_columns = ['Naam bewoner', 'Planregel', 'Mobielnummer', 'Locatie', 'Element', 'Defect', 'Werkbonnummer']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             raise ValueError(f"Missing columns in Excel: {', '.join(missing_columns)}")
@@ -241,7 +253,11 @@ def process_excel_file(filepath):
                 send_whatsapp_message(
                     naam_bewoner=row['Naam bewoner'],
                     planregel=row['Planregel'],
-                    mobielnummer=mobielnummer
+                    mobielnummer=mobielnummer,
+                    locatie=row['Locatie'],
+                    element=row['Element'],
+                    defect=row['Defect'],
+                    werkbonnummer=row['Werkbonnummer']
                 )
 
                 print(f"Message sent for {row['Naam bewoner']}")
@@ -263,7 +279,7 @@ def process_data():
 
         try:
             excel_file = outlook.download_excel_attachment(
-                sender_email=os.environ.get('SENDER_EMAIL'),
+                sender_email=os.environ.get('TEST_EMAIL'),
                 subject_line=os.environ.get('SUBJECT_LINE_AUTO_PLAN')
             )
 
