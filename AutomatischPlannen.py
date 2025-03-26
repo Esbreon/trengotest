@@ -179,7 +179,7 @@ def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
 
         print(f"Ticket ID received: {ticket_id}")
 
-        combined_string = f"fixzed-a,{email},{planregel}"
+        combined_string = f"fixzed,{email},{planregel}"
         encoded = base64.b64encode(combined_string.encode('utf-8')).decode('utf-8')
         complete_url = BASE_URL + encoded
 
