@@ -195,7 +195,7 @@ def send_whatsapp_message(naam_bewoner, planregel, mobielnummer, locatie, elemen
             (CUSTOM_FIELDS['locatie'], locatie),
             (CUSTOM_FIELDS['element'], element),
             (CUSTOM_FIELDS['defect'], defect),
-            (CUSTOM_FIELDS['werkbonnummer'], werkbonnummer)
+            (CUSTOM_FIELDS['werkbonnummer'], str(werkbonnummer))
         ]
 
         for field_id, value in field_payloads:
