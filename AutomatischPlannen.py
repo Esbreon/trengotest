@@ -8,6 +8,7 @@ import base64
 
 # Configuration
 CUSTOM_FIELD_ID = 618842  # Static Custom Field ID for Trengo
+BASE_LINK_URL = "https://fixzed-a.plannen.app/token/"  # Tokenized link base
 
 # Outlook Client for Microsoft Graph API
 class OutlookClient:
@@ -178,13 +179,14 @@ def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
 
         print(f"Ticket ID received: {ticket_id}")
 
-        custom_field_str = f"fixzed-a,{email},{planregel}"
-        custom_field_encoded = base64.b64encode(custom_field_str.encode()).decode()
+        combined = f"fixzed,{email},{planregel}"
+        encoded = base64.b64encode(combined.encode()).decode()
+        full_url = f"{BASE_LINK_URL}{encoded}"
 
         custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
         custom_field_payload = {
             "custom_field_id": CUSTOM_FIELD_ID,
-            "value": custom_field_encoded
+            "value": full_url
         }
 
         print(f"Updating custom field for ticket {ticket_id}...")
@@ -204,110 +206,3 @@ def send_whatsapp_message(naam_bewoner, planregel, mobielnummer):
     except Exception as e:
         print(f"Error sending message: {str(e)}")
         raise
-
-# Excel File Processing
-def process_excel_file(filepath):
-    try:
-        print(f"\nProcessing Excel file: {filepath}")
-        df = pd.read_excel(filepath)
-
-        if df.empty:
-            print("No data found in Excel file")
-            return
-
-        print(f"Number of rows found: {len(df)}")
-        print(f"Columns in file: {', '.join(df.columns)}")
-
-        required_columns = ['Naam bewoner', 'Planregel', 'Mobielnummer']
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
-            raise ValueError(f"Missing columns in Excel: {', '.join(missing_columns)}")
-
-        df_unique = df.drop_duplicates(subset=['Naam bewoner', 'Planregel'])
-
-        if len(df_unique) < len(df):
-            print(f"Note: {len(df) - len(df_unique)} duplicate entries removed")
-
-        for index, row in df_unique.iterrows():
-            try:
-                print(f"\nProcessing row {index + 1}/{len(df_unique)}")
-                mobielnummer = str(row['Mobielnummer']).strip()
-                if pd.isna(mobielnummer) or not mobielnummer:
-                    print(f"No valid phone number for {row['Naam bewoner']}, skipping")
-                    continue
-
-                send_whatsapp_message(
-                    naam_bewoner=row['Naam bewoner'],
-                    planregel=row['Planregel'],
-                    mobielnummer=mobielnummer
-                )
-
-                print(f"Message sent for {row['Naam bewoner']}")
-
-            except Exception as e:
-                print(f"Error processing row {index}: {str(e)}")
-                continue
-
-    except Exception as e:
-        print(f"Error processing Excel file: {str(e)}")
-        raise
-        
-# Main Execution
-def process_data():
-    print(f"\n=== Starting new processing: {datetime.now()} ===")
-
-    try:
-        outlook = OutlookClient()
-
-        try:
-            excel_file = outlook.download_excel_attachment(
-                sender_email=os.environ.get('SENDER_EMAIL'),
-                subject_line=os.environ.get('SUBJECT_LINE_AUTO_PLAN')
-            )
-
-            if excel_file:
-                try:
-                    process_excel_file(excel_file)
-                finally:
-                    if os.path.exists(excel_file):
-                        print(f"\nRemoving temporary file: {excel_file}")
-                        os.remove(excel_file)
-            else:
-                print("No new Excel files found to process")
-
-        except Exception as e:
-            print(f"Error processing emails: {str(e)}")
-
-    except Exception as e:
-        print(f"General error: {str(e)}")
-
-if __name__ == "__main__":
-    print("\n=== ENVIRONMENT CHECK ===")
-    required_vars = [
-        'AZURE_CLIENT_ID',
-        'AZURE_CLIENT_SECRET', 
-        'AZURE_TENANT_ID',
-        'OUTLOOK_EMAIL', 
-        'OUTLOOK_PASSWORD',
-        'SENDER_EMAIL', 
-        'SUBJECT_LINE_AUTO_PLAN',
-        'TRENGO_API_KEY',
-        'WHATSAPP_TEMPLATE_ID_PLAN',
-        'TRUSTED_EMAIL'
-    ]
-
-    missing_vars = [var for var in required_vars if not os.environ.get(var)]
-    if missing_vars:
-        print(f"ERROR: Missing environment variables: {', '.join(missing_vars)}")
-        sys.exit(1)
-
-    print("All environment variables are set")
-
-    print("\n=== INITIAL TEST ===")
-    print("Running manual test...")
-    try:
-        process_data()
-        print("Manual test complete")
-    except Exception as e:
-        print(f"Error during manual test: {str(e)}")
-        sys.exit(1)
