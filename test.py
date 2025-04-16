@@ -143,19 +143,21 @@ def create_contact(name, phone_number):
 
 def ensure_contact_exists(name, phone_number):
     all_contacts = get_all_contacts()
-
     normalized_input = phone_number.replace(" ", "").replace("+", "").lstrip("0")
 
     for contact in all_contacts:
-        existing = contact.get("phone", "")
+        existing = contact.get("phone")
+        if not existing:
+            continue  # skip contacts with no phone
+
         normalized_existing = existing.replace(" ", "").replace("+", "").lstrip("0")
         if normalized_existing.endswith(normalized_input):
             print(f"Contact bestaat al voor {phone_number}")
             return contact
 
-    # No match found → create new
     print(f"Contact nog niet gevonden, aanmaken: {phone_number}")
     return create_contact(name, phone_number)
+
 
 
 def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer):
