@@ -97,34 +97,33 @@ def format_phone_number(phone):
     if phone.endswith('.0'): phone = phone.split('.')[0]
     return phone
 
-def get_contact_by_phone(phone_number):
+def get_all_contacts():
     url = "https://app.trengo.com/api/v2/contacts"
     headers = {
         "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}",
         "Accept": "application/json"
     }
 
+    contacts = []
+    page = 1
+
     try:
-        page = 1
         while True:
             response = requests.get(url, headers=headers, params={"page": page})
             response.raise_for_status()
             data = response.json()
-            contacts = data.get('data', [])
 
-            # Search manually through the contacts on this page
-            for contact in contacts:
-                if contact.get("phone") == phone_number:
-                    return contact
+            contacts.extend(data.get("data", []))
 
-            # Go to next page if there is one
-            if not data.get('meta', {}).get('has_next'):
+            if not data.get("meta", {}).get("has_next"):
                 break
             page += 1
 
     except requests.exceptions.RequestException as e:
-        print(f"Fout bij ophalen contact: {str(e)}")
-    return None
+        print(f"Fout bij ophalen contactenlijst: {str(e)}")
+
+    return contacts
+
 
 def create_contact(name, phone_number):
     url = "https://app.trengo.com/api/v2/contacts"
@@ -143,13 +142,21 @@ def create_contact(name, phone_number):
         return None
 
 def ensure_contact_exists(name, phone_number):
-    contact = get_contact_by_phone(phone_number)
-    if contact:
-        print(f"Contact gevonden in Trengo voor {phone_number}")
-        return contact
-    else:
-        print(f"Contact niet gevonden, nieuw contact aanmaken voor {phone_number}")
-        return create_contact(name, phone_number)
+    all_contacts = get_all_contacts()
+
+    normalized_input = phone_number.replace(" ", "").replace("+", "").lstrip("0")
+
+    for contact in all_contacts:
+        existing = contact.get("phone", "")
+        normalized_existing = existing.replace(" ", "").replace("+", "").lstrip("0")
+        if normalized_existing.endswith(normalized_input):
+            print(f"Contact bestaat al voor {phone_number}")
+            return contact
+
+    # No match found → create new
+    print(f"Contact nog niet gevonden, aanmaken: {phone_number}")
+    return create_contact(name, phone_number)
+
 
 def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer):
     if not mobielnummer:
