@@ -98,19 +98,33 @@ def format_phone_number(phone):
     return phone
 
 def get_contact_by_phone(phone_number):
-    url = f"https://app.trengo.com/api/v2/contacts?phone={phone_number}"
+    url = "https://app.trengo.com/api/v2/contacts"
     headers = {
         "Authorization": f"Bearer {os.environ.get('TRENGO_API_KEY')}",
         "Accept": "application/json"
     }
+
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        contacts = response.json().get('data', [])
-        return contacts[0] if contacts else None
+        page = 1
+        while True:
+            response = requests.get(url, headers=headers, params={"page": page})
+            response.raise_for_status()
+            data = response.json()
+            contacts = data.get('data', [])
+
+            # Search manually through the contacts on this page
+            for contact in contacts:
+                if contact.get("phone") == phone_number:
+                    return contact
+
+            # Go to next page if there is one
+            if not data.get('meta', {}).get('has_next'):
+                break
+            page += 1
+
     except requests.exceptions.RequestException as e:
         print(f"Fout bij ophalen contact: {str(e)}")
-        return None
+    return None
 
 def create_contact(name, phone_number):
     url = "https://app.trengo.com/api/v2/contacts"
