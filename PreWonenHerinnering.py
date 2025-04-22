@@ -275,11 +275,11 @@ def process_data():
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
     try:
         outlook = OutlookClient()
-        sender_email = os.environ.get('SENDER_EMAIL')
+        sender_email = os.environ.get('TEST_EMAIL')
         subject_line = os.environ.get('SUBJECT_LINE_PW_HERINNERING')
 
         if not sender_email or not subject_line:
-            raise EnvironmentError("SENDER_EMAIL of SUBJECT_LINE_PW_HERINNERING ontbreekt in environment")
+            raise EnvironmentError("TEST_EMAIL of SUBJECT_LINE_PW_HERINNERING ontbreekt in environment")
 
         excel_file = outlook.download_excel_attachment(sender_email, subject_line)
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
         'AZURE_TENANT_ID',
         'OUTLOOK_EMAIL',
         'OUTLOOK_PASSWORD',
-        'SENDER_EMAIL',
+        'TEST_EMAIL',
         'SUBJECT_LINE_PW_HERINNERING',
         'WHATSAPP_TEMPLATE_ID_PW_HERINNERING',
         'TRENGO_API_KEY'
