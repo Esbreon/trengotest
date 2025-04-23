@@ -173,6 +173,11 @@ def format_phone_number(phone):
         phone = phone.split('.')[0]
     return phone
 
+def safe_str(val):
+    if pd.isna(val) or val is None:
+        return ""
+    return str(val)
+
 def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer, locatie, element, defect, werkbonnummer, binnen_of_buiten):
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam_bewoner}")
@@ -214,11 +219,11 @@ def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_n
             return
 
         field_payloads = [
-            (CUSTOM_FIELDS['locatie'], locatie),
-            (CUSTOM_FIELDS['element'], element),
-            (CUSTOM_FIELDS['defect'], defect),
-            (CUSTOM_FIELDS['werkbonnummer'], str(werkbonnummer)),
-            (CUSTOM_FIELDS['binnen_of_buiten'], binnen_of_buiten)
+            (CUSTOM_FIELDS['locatie'], safe_str(locatie)),
+            (CUSTOM_FIELDS['element'], safe_str(element)),
+            (CUSTOM_FIELDS['defect'], safe_str(defect)),
+            (CUSTOM_FIELDS['werkbonnummer'], safe_str(werkbonnummer)),
+            (CUSTOM_FIELDS['binnen_of_buiten'], safe_str(binnen_of_buiten))
         ]
 
         for field_id, value in field_payloads:
