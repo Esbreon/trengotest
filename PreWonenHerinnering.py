@@ -206,8 +206,8 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
         field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
         field_response.raise_for_status()
 
-        print(f"Bericht en custom fields succesvol verstuurd voor {naam}")
-        return response_json
+    print(f"Bericht en custom fields succesvol verstuurd voor {naam}")
+    return response_json
 
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error bij versturen bericht: {str(e)}")
