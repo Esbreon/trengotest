@@ -188,7 +188,7 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
             return response_json
 
         # Update custom ticket fields
-        custom_fields = [
+        field_payloads = [
             (CUSTOM_FIELDS['locatie'], locatie),
             (CUSTOM_FIELDS['element'], element),
             (CUSTOM_FIELDS['defect'], defect),
@@ -196,15 +196,15 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
             (CUSTOM_FIELDS['binnen_of_buiten'], binnen_of_buiten)
         ]
 
-        for field_id, value in custom_fields:
-            field_payload = {
-                "custom_field_id": field_id,
-                "value": value
-            }
-            custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
-            print(f"Bijwerken van custom field {field_id}...")
-            field_response = requests.post(custom_field_url, json=field_payload, headers=headers)
-            field_response.raise_for_status()
+    for field_id, value in field_payloads:
+        custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
+        custom_field_payload = {
+            "custom_field_id": field_id,
+            "value": value
+        }
+        print(f"Updating custom field {field_id}...")
+        field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
+        field_response.raise_for_status()
 
         print(f"Bericht en custom fields succesvol verstuurd voor {naam}")
         return response_json
