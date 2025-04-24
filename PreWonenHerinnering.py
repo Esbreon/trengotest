@@ -201,18 +201,18 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
             (CUSTOM_FIELDS['binnen_of_buiten'], safe_str(binnen_of_buiten))
         ]
 
-    for field_id, value in field_payloads:
-        custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
-        custom_field_payload = {
-            "custom_field_id": field_id,
-            "value": value
-        }
-        print(f"Updating custom field {field_id}...")
-        field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
-        field_response.raise_for_status()
+        for field_id, value in field_payloads:
+            custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
+            custom_field_payload = {
+                "custom_field_id": field_id,
+                "value": value
+            }
+            print(f"Updating custom field {field_id}...")
+            field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
+            field_response.raise_for_status()
 
-    print(f"Bericht en custom fields succesvol verstuurd voor {naam}")
-    return response_json
+        print(f"Bericht en custom fields succesvol verstuurd voor {naam}")
+        return response_json
 
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error bij versturen bericht: {str(e)}")
