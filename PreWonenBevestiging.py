@@ -6,6 +6,7 @@ from datetime import datetime
 import msal
 from apscheduler.schedulers.blocking import BlockingScheduler
 import math
+import json
 
 CUSTOM_FIELDS = {
     "locatie": 613776,
@@ -147,6 +148,8 @@ class OutlookClient:
 
 def format_date(date_str):
     try:
+        if pd.isna(date_str) or str(date_str).lower() == "nat":
+            return ""
         nl_month_abbr = {
             1: 'januari', 2: 'februari', 3: 'maart', 4: 'april', 5: 'mei', 6: 'juni',
             7: 'juli', 8: 'augustus', 9: 'september', 10: 'oktober', 11: 'november', 12: 'december'
@@ -164,7 +167,7 @@ def format_date(date_str):
         return f"{date_obj.day} {nl_month_abbr[date_obj.month]} {date_obj.year}"
     except Exception as e:
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
-        return date_str
+        return str(date_str)
 
 def format_phone_number(phone):
     if pd.isna(phone):
@@ -235,12 +238,12 @@ def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_n
         ]
 
         for field_id, value in field_payloads:
+            print(f"Custom field {field_id} = {repr(value)}")
             custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
             custom_field_payload = {
                 "custom_field_id": field_id,
                 "value": value
             }
-            print(f"Updating custom field {field_id}...")
             field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
             field_response.raise_for_status()
 
@@ -288,10 +291,10 @@ def process_data():
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
     try:
         outlook = OutlookClient()
-        sender_email = os.environ.get('SENDER_EMAIL')
+        sender_email = os.environ.get('TEST_EMAIL')
         subject_line = os.environ.get('SUBJECT_LINE_PW_BEVESTIGING')
         if not sender_email or not subject_line:
-            raise EnvironmentError("SENDER_EMAIL en/of SUBJECT_LINE_PW_BEVESTIGING niet ingesteld in environment")
+            raise EnvironmentError("TEST_EMAIL en/of SUBJECT_LINE_PW_BEVESTIGING niet ingesteld in environment")
         try:
             excel_file = outlook.download_excel_attachment(
                 sender_email=sender_email,
@@ -319,7 +322,7 @@ if __name__ == "__main__":
         'AZURE_TENANT_ID',
         'OUTLOOK_EMAIL', 
         'OUTLOOK_PASSWORD',
-        'SENDER_EMAIL', 
+        'TEST_EMAIL', 
         'SUBJECT_LINE_PW_BEVESTIGING',
         'WHATSAPP_TEMPLATE_ID_PW_BEVESTIGING', 
         'TRENGO_API_KEY'
