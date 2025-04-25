@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime
 import msal
 from apscheduler.schedulers.blocking import BlockingScheduler
+import math
 
 CUSTOM_FIELDS = {
     "locatie": 613776,
@@ -21,24 +22,24 @@ class OutlookClient:
         self.tenant_id = os.getenv('AZURE_TENANT_ID')
         self.username = os.getenv('OUTLOOK_EMAIL')
         self.password = os.getenv('OUTLOOK_PASSWORD')
-        
+
         self.app = msal.ConfidentialClientApplication(
             client_id=self.client_id,
             client_credential=self.client_secret,
             authority=f"https://login.microsoftonline.com/{self.tenant_id}"
         )
-        
+
     def get_token(self):
         scopes = ['https://graph.microsoft.com/Mail.Read',
                   'https://graph.microsoft.com/Mail.ReadWrite',
                   'https://graph.microsoft.com/User.Read']
-        
+
         result = self.app.acquire_token_by_username_password(
             username=self.username,
             password=self.password,
             scopes=scopes
         )
-        
+
         if "access_token" not in result:
             error_msg = result.get('error_description', 'Unknown error')
             raise Exception(f"Failed to obtain token: {error_msg}")
@@ -115,6 +116,8 @@ class OutlookClient:
 
 def format_date(date_str):
     try:
+        if pd.isna(date_str) or str(date_str).lower() == "nat":
+            return ""
         nl_month_abbr = {
             1: 'januari', 2: 'februari', 3: 'maart', 4: 'april', 5: 'mei', 6: 'juni',
             7: 'juli', 8: 'augustus', 9: 'september', 10: 'oktober', 11: 'november', 12: 'december'
@@ -129,11 +132,11 @@ def format_date(date_str):
                 except ValueError:
                     continue
             else:
-                return date_str
+                return str(date_str)
         return f"{date_obj.day} {nl_month_abbr[date_obj.month]} {date_obj.year}"
     except Exception as e:
         print(f"Fout bij formatteren datum {date_str}: {str(e)}")
-        return date_str
+        return str(date_str)
 
 def format_phone_number(phone):
     if pd.isna(phone):
@@ -146,7 +149,14 @@ def format_phone_number(phone):
 def safe_str(val):
     if pd.isna(val) or val is None:
         return ""
-    return str(val)
+    if isinstance(val, float):
+        if math.isnan(val) or math.isinf(val):
+            return ""
+        if val.is_integer():
+            return str(int(val))
+    if str(val).strip().lower() in {"nan", "inf", "none"}:
+        return ""
+    return str(val).strip()
 
 def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer,
                           locatie, element, defect, werkbonnummer, binnen_of_buiten):
@@ -186,13 +196,11 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
         response_json = response.json()
         print(f"Trengo response: {response.text}")
 
-        # Retrieve the ticket ID
         ticket_id = response_json.get('message', {}).get('ticket_id')
         if not ticket_id:
             print("Geen ticket_id ontvangen. Custom fields overslaan.")
             return response_json
 
-        # Update custom ticket fields
         field_payloads = [
             (CUSTOM_FIELDS['locatie'], safe_str(locatie)),
             (CUSTOM_FIELDS['element'], safe_str(element)),
@@ -202,12 +210,12 @@ def send_whatsapp_message(naam, monteur, dagnaam, datum, tijdvak, reparatieduur,
         ]
 
         for field_id, value in field_payloads:
+            print(f"Custom field {field_id} = {repr(value)}")
             custom_field_url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields"
             custom_field_payload = {
                 "custom_field_id": field_id,
                 "value": value
             }
-            print(f"Updating custom field {field_id}...")
             field_response = requests.post(custom_field_url, json=custom_field_payload, headers=headers)
             field_response.raise_for_status()
 
@@ -241,10 +249,8 @@ def process_excel_file(filepath):
     if missing:
         raise ValueError(f"Missende kolommen in Excel: {', '.join(missing)}")
 
-    # Convert date
     df['Datum bezoek'] = pd.to_datetime(df['Datum bezoek'])
 
-    # Remove duplicates
     df_unique = df.drop_duplicates(subset=['Naam bewoner', 'Datum bezoek', 'DP Nummer'])
     if len(df_unique) < len(df):
         print(f"{len(df) - len(df_unique)} dubbele afspraken verwijderd")
@@ -280,11 +286,11 @@ def process_data():
     print(f"\n=== Start nieuwe verwerking: {datetime.now()} ===")
     try:
         outlook = OutlookClient()
-        sender_email = os.environ.get('SENDER_EMAIL')
+        sender_email = os.environ.get('TEST_EMAIL')
         subject_line = os.environ.get('SUBJECT_LINE_PW_HERINNERING')
 
         if not sender_email or not subject_line:
-            raise EnvironmentError("SENDER_EMAIL of SUBJECT_LINE_PW_HERINNERING ontbreekt in environment")
+            raise EnvironmentError("TEST_EMAIL of SUBJECT_LINE_PW_HERINNERING ontbreekt in environment")
 
         excel_file = outlook.download_excel_attachment(sender_email, subject_line)
 
@@ -308,7 +314,7 @@ if __name__ == "__main__":
         'AZURE_TENANT_ID',
         'OUTLOOK_EMAIL',
         'OUTLOOK_PASSWORD',
-        'SENDER_EMAIL',
+        'TEST_EMAIL',
         'SUBJECT_LINE_PW_HERINNERING',
         'WHATSAPP_TEMPLATE_ID_PW_HERINNERING',
         'TRENGO_API_KEY'
