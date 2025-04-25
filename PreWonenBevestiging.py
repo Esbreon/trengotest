@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime
 import msal
 from apscheduler.schedulers.blocking import BlockingScheduler
+import math
 
 CUSTOM_FIELDS = {
     "locatie": 613776,
@@ -175,6 +176,8 @@ def format_phone_number(phone):
 
 def safe_str(val):
     if pd.isna(val) or val is None:
+        return ""
+    if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
         return ""
     return str(val)
 
