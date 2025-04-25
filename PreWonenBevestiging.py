@@ -177,9 +177,14 @@ def format_phone_number(phone):
 def safe_str(val):
     if pd.isna(val) or val is None:
         return ""
-    if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
+    if isinstance(val, float):
+        if math.isnan(val) or math.isinf(val):
+            return ""
+        if val.is_integer():
+            return str(int(val))
+    if str(val).strip().lower() in {"nan", "inf", "none"}:
         return ""
-    return str(val)
+    return str(val).strip()
 
 def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer, locatie, element, defect, werkbonnummer, binnen_of_buiten):
     if not mobielnummer:
