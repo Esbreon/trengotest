@@ -189,7 +189,7 @@ def safe_str(val):
         return ""
     return str(val).strip()
 
-def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer, locatie, element, defect, werkbonnummer, binnen_of_buiten):
+def send_whatsapp_message(naam_bewoner, taaktype, dag, datum, tijdvak, reparatieduur, dp_nummer, mobielnummer, locatie, element, defect, werkbonnummer, binnen_of_buiten):
     if not mobielnummer:
         print(f"Geen geldig telefoonnummer voor {naam_bewoner}")
         return
@@ -203,11 +203,12 @@ def send_whatsapp_message(naam_bewoner, dag, datum, tijdvak, reparatieduur, dp_n
         "hsm_id": os.environ.get('WHATSAPP_TEMPLATE_ID_PW_BEVESTIGING'),
         "params": [
             {"type": "body", "key": "{{1}}", "value": str(naam_bewoner)},
-            {"type": "body", "key": "{{2}}", "value": str(dag)},
-            {"type": "body", "key": "{{3}}", "value": formatted_date},
-            {"type": "body", "key": "{{4}}", "value": str(tijdvak)},
-            {"type": "body", "key": "{{5}}", "value": str(reparatieduur)},
-            {"type": "body", "key": "{{6}}", "value": str(dp_nummer)}
+            {"type": "body", "key": "{{2}}", "value": str(taaktype)},
+            {"type": "body", "key": "{{3}}", "value": str(dag)},
+            {"type": "body", "key": "{{4}}", "value": formatted_date},
+            {"type": "body", "key": "{{5}}", "value": str(tijdvak)},
+            {"type": "body", "key": "{{6}}", "value": str(reparatieduur)},
+            {"type": "body", "key": "{{7}}", "value": str(dp_nummer)}
         ]
     }
 
@@ -271,6 +272,7 @@ def process_excel_file(filepath):
             print(f"\nVerwerken rij {index + 1}/{len(df)}")
             send_whatsapp_message(
                 naam_bewoner=row['Naam bewoner'],
+                taaktype=row['Taaktype'],
                 dag=row['Dag'],
                 datum=row['Datum bezoek'],
                 tijdvak=row['Tijdvak'],
