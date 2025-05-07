@@ -249,11 +249,11 @@ def process_data():
 
     try:
         outlook = OutlookClient()
-        sender_email = os.environ.get('TEST_EMAIL')
+        sender_email = os.environ.get('SENDER_EMAIL')
         subject_line = os.environ.get('SUBJECT_LINE_AUTO_PLAN')
 
         if not sender_email or not subject_line:
-            raise EnvironmentError("TEST_EMAIL and/or SUBJECT_LINE_AUTO_PLAN not set")
+            raise EnvironmentError("SENDER_EMAIL and/or SUBJECT_LINE_AUTO_PLAN not set")
 
         excel_file = outlook.download_excel_attachment(sender_email, subject_line)
 
@@ -279,7 +279,7 @@ if __name__ == "__main__":
         'AZURE_TENANT_ID',
         'OUTLOOK_EMAIL',
         'OUTLOOK_PASSWORD',
-        'TEST_EMAIL',
+        'SENDER_EMAIL',
         'SUBJECT_LINE_AUTO_PLAN',
         'WHATSAPP_TEMPLATE_ID_PLAN',
         'TRENGO_API_KEY',
