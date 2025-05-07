@@ -17,7 +17,7 @@ CUSTOM_FIELDS = {
     "binnen_of_buiten": 618205
 }
 
-BASE_PLAN_URL = "https://fixzed-a.plannen.app/token/"
+BASE_PLAN_URL = "https://fixzed.plannen.app/token/"
 
 # === Outlook Client ===
 class OutlookClient:
