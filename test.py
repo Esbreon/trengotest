@@ -82,13 +82,17 @@ def fetch_recent_trengo_tickets():
     next_url = f"https://app.trengo.com/api/v2/tickets?page=1&per_page={PER_PAGE}"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     page = 1
+    ticket_count = 0
 
-    while next_url and len(tickets_by_werkbon) < MAX_TICKETS:
+    while next_url and ticket_count < MAX_TICKETS:
         print(f"Retrieved page {page}")
         resp = requests.get(next_url, headers=headers)
         resp.raise_for_status()
         payload = resp.json()
         for ticket in payload.get("data", []):
+            ticket_count += 1
+            if ticket_count > MAX_TICKETS:
+                break
             custom_fields = ticket.get("custom_field_values", [])
             ticket_id = ticket.get("id")
             status = ticket.get("status", "")
@@ -133,9 +137,14 @@ def format_phone(phone):
     return phone
 
 def send_message_with_ticket(ticket_id, params):
-    url = f"https://app.trengo.com/api/v2/tickets/{ticket_id}/reply"
+    url = f"https://app.trengo.com/api/v2/messages"
     headers = {"Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}", "Content-Type": "application/json"}
-    payload = {"message_type": "whatsapp_template", "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'), "params": params}
+    payload = {
+        "ticket_id": ticket_id,
+        "message_type": "whatsapp_template",
+        "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'),
+        "params": params
+    }
     requests.post(url, json=payload, headers=headers).raise_for_status()
     print(f"✅ Message appended to existing ticket {ticket_id}")
 
@@ -194,7 +203,7 @@ def main():
 
     print("🔄 Ophalen recent Trengo tickets...")
     ticket_lookup = fetch_recent_trengo_tickets()
-    print(f"✅ {len(ticket_lookup)} unieke werkbonnummers opgehaald")
+    print(f"✅ {sum(len(t) for t in ticket_lookup.values())} tickets opgehaald voor {len(ticket_lookup)} unieke werkbonnummers")
 
     outlook = OutlookClient()
     sender = os.getenv('TEST_EMAIL')
