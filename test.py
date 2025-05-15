@@ -75,7 +75,6 @@ class OutlookClient:
                     return filepath
         return None
 
-
 def fetch_recent_trengo_tickets():
     token = os.getenv("TRENGO_API_KEY")
     tickets_by_werkbon = {}
@@ -93,20 +92,34 @@ def fetch_recent_trengo_tickets():
             ticket_count += 1
             if ticket_count > MAX_TICKETS:
                 break
+
+            channel = ticket.get("channel", {})
+            channel_type = channel.get("type", "")
+            channel_id = channel.get("id")
+
+            if channel_type != "WA_BUSINESS" or not channel_id:
+                continue
+
             custom_fields = ticket.get("custom_field_values", [])
             ticket_id = ticket.get("id")
             status = ticket.get("status", "")
             archived = ticket.get("archived_at") is not None
             is_open = status in ["OPEN", "ASSIGNED", "CLOSED"] or archived
+
             for field in custom_fields:
                 if str(field.get("custom_field_id")) == str(CUSTOM_FIELDS["werkbonnummer"]):
                     werkbon = str(field.get("value", "")).strip()
                     if werkbon:
-                        tickets_by_werkbon.setdefault(werkbon, []).append({"ticket_id": ticket_id, "is_open": is_open})
+                        tickets_by_werkbon.setdefault(werkbon, []).append({
+                            "ticket_id": ticket_id,
+                            "is_open": is_open,
+                            "channel_id": channel_id
+                        })
+
         next_url = payload.get("links", {}).get("next")
         page += 1
-    return tickets_by_werkbon
 
+    return tickets_by_werkbon
 
 def safe_str(val):
     if pd.isna(val) or val is None:
@@ -123,20 +136,25 @@ def format_date(date_str):
             try:
                 dt = datetime.strptime(str(date_str), fmt)
                 break
-            except: continue
+            except:
+                continue
         else:
             return str(date_str)
-        nl_months = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december']
+        nl_months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli',
+                     'augustus', 'september', 'oktober', 'november', 'december']
         return f"{dt.day} {nl_months[dt.month - 1]} {dt.year}"
-    except: return str(date_str)
+    except:
+        return str(date_str)
 
 def format_phone(phone):
-    if pd.isna(phone): return None
+    if pd.isna(phone):
+        return None
     phone = str(phone).strip()
-    if phone.endswith('.0'): phone = phone.split('.')[0]
+    if phone.endswith('.0'):
+        phone = phone.split('.')[0]
     return phone
 
-def send_message_with_ticket(ticket_id, params):
+def send_message_with_ticket(ticket_id, channel_id, params):
     url = "https://app.trengo.com/api/v2/messages"
     headers = {
         "Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}",
@@ -144,6 +162,7 @@ def send_message_with_ticket(ticket_id, params):
     }
     payload = {
         "ticket_id": ticket_id,
+        "channel_id": channel_id,
         "message_type": "whatsapp_template",
         "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'),
         "params": params
@@ -168,7 +187,11 @@ def send_message_with_ticket(ticket_id, params):
 def send_new_whatsapp_message(phone, params):
     url = "https://app.trengo.com/api/v2/wa_sessions"
     headers = {"Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}", "Content-Type": "application/json"}
-    payload = {"recipient_phone_number": phone, "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'), "params": params}
+    payload = {
+        "recipient_phone_number": phone,
+        "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'),
+        "params": params
+    }
     resp = requests.post(url, json=payload, headers=headers)
     resp.raise_for_status()
     print(f"✅ New WhatsApp message sent to {phone}")
@@ -177,7 +200,11 @@ def send_new_whatsapp_message(phone, params):
 def set_custom_fields(ticket_id, fields):
     headers = {"Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}", "Content-Type": "application/json"}
     for fid, val in fields.items():
-        requests.post(f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields", json={"custom_field_id": fid, "value": val}, headers=headers).raise_for_status()
+        requests.post(
+            f"https://app.trengo.com/api/v2/tickets/{ticket_id}/custom_fields",
+            json={"custom_field_id": fid, "value": val},
+            headers=headers
+        ).raise_for_status()
 
 def process_excel_file(filepath, ticket_lookup):
     df = pd.read_excel(filepath)
@@ -198,9 +225,10 @@ def process_excel_file(filepath, ticket_lookup):
             {"type": "body", "key": "{{7}}", "value": safe_str(row['DP Nummer'])}
         ]
 
-        open_tickets = [t for t in ticket_lookup.get(werkbon, []) if t['is_open']]
+        open_tickets = [t for t in ticket_lookup.get(werkbon, []) if t['is_open'] and t.get('channel_id')]
         if len(open_tickets) == 1:
-            send_message_with_ticket(open_tickets[0]['ticket_id'], params)
+            ticket = open_tickets[0]
+            send_message_with_ticket(ticket['ticket_id'], ticket['channel_id'], params)
         else:
             new_ticket_id = send_new_whatsapp_message(mobiel, params)
             if new_ticket_id:
