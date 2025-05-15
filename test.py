@@ -145,7 +145,7 @@ def send_message_with_ticket(ticket_id, params):
     payload = {
         "ticket_id": ticket_id,
         "message_type": "whatsapp_template",
-        "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_PW_BEVESTIGING'),
+        "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'),
         "params": params
     }
 
