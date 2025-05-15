@@ -137,16 +137,33 @@ def format_phone(phone):
     return phone
 
 def send_message_with_ticket(ticket_id, params):
-    url = f"https://app.trengo.com/api/v2/messages"
-    headers = {"Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}", "Content-Type": "application/json"}
+    url = "https://app.trengo.com/api/v2/messages"
+    headers = {
+        "Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}",
+        "Content-Type": "application/json"
+    }
     payload = {
         "ticket_id": ticket_id,
         "message_type": "whatsapp_template",
-        "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'),
+        "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_PW_BEVESTIGING'),
         "params": params
     }
-    requests.post(url, json=payload, headers=headers).raise_for_status()
-    print(f"✅ Message appended to existing ticket {ticket_id}")
+
+    try:
+        resp = requests.post(url, json=payload, headers=headers)
+        if resp.status_code != 200:
+            print("❌ Failed to send message to existing ticket")
+            print(f"🔗 URL: {url}")
+            print("📦 Payload:")
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+            print(f"📥 Response [{resp.status_code}]:")
+            print(resp.text)
+        resp.raise_for_status()
+        print(f"✅ Message appended to existing ticket {ticket_id}")
+    except requests.exceptions.HTTPError as e:
+        print("❗ HTTPError occurred while sending template message.")
+        print(f"Error details: {e}")
+        raise
 
 def send_new_whatsapp_message(phone, params):
     url = "https://app.trengo.com/api/v2/wa_sessions"
