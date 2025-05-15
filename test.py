@@ -162,9 +162,11 @@ def send_message_with_ticket(ticket_id, contact_id, params):
         "Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "ticket_id": ticket_id,
         "contact_id": contact_id,
+        "channel_id": 1306639,
         "message_type": "whatsapp_template",
         "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'),
         "params": params
@@ -185,6 +187,7 @@ def send_message_with_ticket(ticket_id, contact_id, params):
         print("❗ HTTPError occurred while sending template message.")
         print(f"Error details: {e}")
         raise
+
 
 def send_new_whatsapp_message(phone, params):
     url = "https://app.trengo.com/api/v2/wa_sessions"
