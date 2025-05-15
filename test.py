@@ -96,8 +96,9 @@ def fetch_recent_trengo_tickets():
             channel = ticket.get("channel", {})
             channel_type = channel.get("type", "")
             channel_id = channel.get("id")
+            contact_id = ticket.get("contact_id")
 
-            if channel_type != "WA_BUSINESS" or not channel_id:
+            if channel_type != "WA_BUSINESS" or not channel_id or not contact_id:
                 continue
 
             custom_fields = ticket.get("custom_field_values", [])
@@ -113,7 +114,8 @@ def fetch_recent_trengo_tickets():
                         tickets_by_werkbon.setdefault(werkbon, []).append({
                             "ticket_id": ticket_id,
                             "is_open": is_open,
-                            "channel_id": channel_id
+                            "channel_id": channel_id,
+                            "contact_id": contact_id
                         })
 
         next_url = payload.get("links", {}).get("next")
@@ -154,7 +156,7 @@ def format_phone(phone):
         phone = phone.split('.')[0]
     return phone
 
-def send_message_with_ticket(ticket_id, channel_id, params):
+def send_message_with_ticket(ticket_id, contact_id, params):
     url = "https://app.trengo.com/api/v2/messages"
     headers = {
         "Authorization": f"Bearer {os.getenv('TRENGO_API_KEY')}",
@@ -162,7 +164,7 @@ def send_message_with_ticket(ticket_id, channel_id, params):
     }
     payload = {
         "ticket_id": ticket_id,
-        "channel_id": channel_id,
+        "contact_id": contact_id,
         "message_type": "whatsapp_template",
         "hsm_id": os.getenv('WHATSAPP_TEMPLATE_ID_TEST_BEVESTIGING'),
         "params": params
@@ -228,7 +230,7 @@ def process_excel_file(filepath, ticket_lookup):
         open_tickets = [t for t in ticket_lookup.get(werkbon, []) if t['is_open'] and t.get('channel_id')]
         if len(open_tickets) == 1:
             ticket = open_tickets[0]
-            send_message_with_ticket(ticket['ticket_id'], ticket['channel_id'], params)
+            send_message_with_ticket(ticket['ticket_id'], ticket['contact_id'], params)
         else:
             new_ticket_id = send_new_whatsapp_message(mobiel, params)
             if new_ticket_id:
